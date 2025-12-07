@@ -1,0 +1,598 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  PENDING
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum PaymentMethod {
+  VISA
+  MASTERCARD
+  KNET
+  CASH
+  BANK_TRANSFER
+  STRIPE
+  PAYPAL
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum ExamType {
+  MCQ
+  TRUE_FALSE
+  ESSAY
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum NotificationType {
+  COURSE
+  EXAM
+  PAYMENT
+  SYSTEM
+  GENERAL
+}
+
+// User Model
+model User {
+  id           String     @id @default(uuid())
+  nameAr       String     @map("name_ar")
+  nameEn       String     @map("name_en")
+  email        String     @unique
+  phone        String?    @unique
+  password     String
+  role         UserRole   @default(STUDENT)
+  status       UserStatus @default(ACTIVE)
+  avatar       String?
+  department   String?
+  year         Int?
+  semester     Int?
+  refreshToken String?    @map("refresh_token")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  coursesCreated         Course[]                @relation("CourseTeacher")
+  enrollments            Purchase[]
+  cart                   Cart?
+  wishlist               WishlistItem[]
+  examResults            ExamResult[]
+  ratings                Rating[]
+  teacherRatings         TeacherRating[]         @relation("TeacherRatings")
+  studentRatings         TeacherRating[]         @relation("StudentRatings")
+  payments               Payment[]
+  tickets                Ticket[]
+  progress               Progress[]
+  quizResults            QuizResult[]
+  sentNotifications      Notification[]          @relation("NotificationSender")
+  notificationRecipients NotificationRecipient[] @relation("NotificationRecipient")
+
+  @@map("users")
+}
+
+// Category Model
+model Category {
+  id            String   @id @default(uuid())
+  nameAr        String   @map("name_ar")
+  nameEn        String   @map("name_en")
+  descriptionAr String?  @map("description_ar") @db.Text
+  descriptionEn String?  @map("description_en") @db.Text
+  image         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  courses Course[]
+
+  @@map("categories")
+}
+
+// Course Model
+model Course {
+  id            String       @id @default(uuid())
+  titleAr       String       @map("title_ar")
+  titleEn       String       @map("title_en")
+  descriptionAr String?      @map("description_ar") @db.Text
+  descriptionEn String?      @map("description_en") @db.Text
+  teacherId     String       @map("teacher_id")
+  categoryId    String       @map("category_id")
+  price         Decimal      @db.Decimal(10, 2)
+  discount      Decimal      @default(0) @db.Decimal(5, 2)
+  finalPrice    Decimal      @map("final_price") @db.Decimal(10, 2)
+  coverImage    String?      @map("cover_image")
+  level         CourseLevel  @default(BEGINNER)
+  status        CourseStatus @default(DRAFT)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  teacher       User            @relation("CourseTeacher", fields: [teacherId], references: [id])
+  category      Category        @relation(fields: [categoryId], references: [id])
+  chapters      Chapter[]
+  content       CourseContent[]
+  exams         Exam[]
+  purchases     Purchase[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  ratings       Rating[]
+  progress      Progress[]
+  notifications Notification[]  @relation("CourseNotifications")
+
+  @@map("courses")
+}
+
+// Chapter Model
+model Chapter {
+  id            String   @id @default(uuid())
+  courseId      String   @map("course_id")
+  titleAr       String   @map("title_ar")
+  titleEn       String   @map("title_en")
+  descriptionAr String?  @map("description_ar") @db.Text
+  descriptionEn String?  @map("description_en") @db.Text
+  order         Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  course  Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  content CourseContent[]
+
+  @@map("chapters")
+}
+
+// Course Content Model
+model CourseContent {
+  id            String   @id @default(uuid())
+  courseId      String   @map("course_id")
+  chapterId     String?  @map("chapter_id")
+  type          String // video, pdf, text, assignment, quiz, intro_video
+  titleAr       String   @map("title_ar")
+  titleEn       String   @map("title_en")
+  descriptionAr String?  @map("description_ar") @db.Text
+  descriptionEn String?  @map("description_en") @db.Text
+  content       String?  @db.Text
+  fileUrl       String?  @map("file_url")
+  videoUrl      String?  @map("video_url")
+  duration      Int? // in minutes
+  order         Int      @default(0)
+  isFree        Boolean  @default(false) @map("is_free")
+  isIntroVideo  Boolean  @default(false) @map("is_intro_video") // Course intro or chapter intro
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  quiz    Quiz?
+
+  @@map("course_content")
+}
+
+// Quiz Model (for video/content quizzes)
+model Quiz {
+  id           String   @id @default(uuid())
+  contentId    String   @unique @map("content_id")
+  titleAr      String   @map("title_ar")
+  titleEn      String   @map("title_en")
+  passingScore Decimal  @default(60) @map("passing_score") @db.Decimal(5, 2)
+  timeLimit    Int?     @map("time_limit") // in minutes
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  content   CourseContent  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  results   QuizResult[]
+
+  @@map("quizzes")
+}
+
+// Quiz Question Model
+model QuizQuestion {
+  id            String   @id @default(uuid())
+  quizId        String   @map("quiz_id")
+  type          ExamType
+  questionAr    String   @map("question_ar") @db.Text
+  questionEn    String   @map("question_en") @db.Text
+  options       Json? // For MCQ: [{textAr: "...", textEn: "...", ...}]
+  correctAnswer String   @map("correct_answer") @db.Text
+  points        Decimal  @default(1) @db.Decimal(5, 2)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@map("quiz_questions")
+}
+
+// Quiz Result Model
+model QuizResult {
+  id          String   @id @default(uuid())
+  quizId      String   @map("quiz_id")
+  studentId   String   @map("student_id")
+  score       Decimal  @db.Decimal(10, 2)
+  totalScore  Decimal  @map("total_score") @db.Decimal(10, 2)
+  percentage  Decimal  @db.Decimal(5, 2)
+  passed      Boolean  @default(false)
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@unique([quizId, studentId])
+  @@map("quiz_results")
+}
+
+// Quiz Answer Model
+model QuizAnswer {
+  id         String   @id @default(uuid())
+  resultId   String   @map("result_id")
+  questionId String   @map("question_id")
+  answer     String   @db.Text
+  isCorrect  Boolean  @default(false) @map("is_correct")
+  points     Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  result   QuizResult   @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_answers")
+}
+
+// Exam Model
+model Exam {
+  id            String    @id @default(uuid())
+  courseId      String    @map("course_id")
+  titleAr       String    @map("title_ar")
+  titleEn       String    @map("title_en")
+  descriptionAr String?   @map("description_ar") @db.Text
+  descriptionEn String?   @map("description_en") @db.Text
+  duration      Int? // in minutes
+  passingScore  Decimal   @default(60) @map("passing_score") @db.Decimal(5, 2)
+  startDate     DateTime? @map("start_date")
+  endDate       DateTime? @map("end_date")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions ExamQuestion[]
+  results   ExamResult[]
+
+  @@map("exams")
+}
+
+// Exam Question Model
+model ExamQuestion {
+  id            String   @id @default(uuid())
+  examId        String   @map("exam_id")
+  type          ExamType
+  questionAr    String   @map("question_ar") @db.Text
+  questionEn    String   @map("question_en") @db.Text
+  options       Json? // For MCQ: {a: "option1", b: "option2", ...}
+  correctAnswer String   @map("correct_answer") @db.Text
+  points        Decimal  @default(1) @db.Decimal(5, 2)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  exam    Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers ExamAnswer[]
+
+  @@map("exam_questions")
+}
+
+// Exam Result Model
+model ExamResult {
+  id          String    @id @default(uuid())
+  examId      String    @map("exam_id")
+  studentId   String    @map("student_id")
+  score       Decimal   @db.Decimal(10, 2)
+  totalScore  Decimal   @map("total_score") @db.Decimal(10, 2)
+  percentage  Decimal   @db.Decimal(5, 2)
+  passed      Boolean   @default(false)
+  startedAt   DateTime  @map("started_at")
+  submittedAt DateTime? @map("submitted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  exam    Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers ExamAnswer[]
+
+  @@unique([examId, studentId])
+  @@map("exam_results")
+}
+
+// Exam Answer Model
+model ExamAnswer {
+  id         String   @id @default(uuid())
+  resultId   String   @map("result_id")
+  questionId String   @map("question_id")
+  answer     String   @db.Text
+  isCorrect  Boolean  @default(false) @map("is_correct")
+  points     Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  result   ExamResult   @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  question ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("exam_answers")
+}
+
+// Purchase Model
+model Purchase {
+  id        String   @id @default(uuid())
+  studentId String   @map("student_id")
+  courseId  String   @map("course_id")
+  amount    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  payment Payment?
+
+  @@unique([studentId, courseId])
+  @@map("purchases")
+}
+
+// Payment Model
+model Payment {
+  id            String        @id @default(uuid())
+  studentId     String        @map("student_id")
+  purchaseId    String?       @unique @map("purchase_id")
+  courseId      String?       @map("course_id")
+  paymentMethod PaymentMethod @map("payment_method")
+  transactionId String?       @unique @map("transaction_id")
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(PENDING)
+  metadata      Json? // Additional payment data
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  student  User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  purchase Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+
+  @@map("payments")
+}
+
+// Cart Model
+model Cart {
+  id        String   @id @default(uuid())
+  studentId String   @unique @map("student_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  items   CartItem[]
+
+  @@map("cart")
+}
+
+// Cart Item Model
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String   @map("cart_id")
+  courseId  String   @map("course_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, courseId])
+  @@map("cart_items")
+}
+
+// Wishlist Model
+model WishlistItem {
+  id        String   @id @default(uuid())
+  studentId String   @map("student_id")
+  courseId  String   @map("course_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@map("wishlist")
+}
+
+// Rating Model
+model Rating {
+  id        String   @id @default(uuid())
+  studentId String   @map("student_id")
+  courseId  String   @map("course_id")
+  rating    Int // 1-5
+  commentAr String?  @map("comment_ar") @db.Text
+  commentEn String?  @map("comment_en") @db.Text
+  date      DateTime @default(now()) // Rating date
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@map("ratings")
+}
+
+// Teacher Rating Model
+model TeacherRating {
+  id        String   @id @default(uuid())
+  studentId String   @map("student_id")
+  teacherId String   @map("teacher_id")
+  rating    Int // 1-5
+  commentAr String?  @map("comment_ar") @db.Text
+  commentEn String?  @map("comment_en") @db.Text
+  date      DateTime @default(now()) // Rating date
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student User @relation("StudentRatings", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher User @relation("TeacherRatings", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, teacherId])
+  @@map("teacher_ratings")
+}
+
+// Progress Model
+model Progress {
+  id        String   @id @default(uuid())
+  studentId String   @map("student_id")
+  courseId  String   @map("course_id")
+  contentId String?  @map("content_id")
+  completed Boolean  @default(false)
+  progress  Decimal  @default(0) @db.Decimal(5, 2) // percentage
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId, contentId])
+  @@map("progress")
+}
+
+// Notification Model
+model Notification {
+  id        String           @id @default(uuid())
+  senderId  String?          @map("sender_id")
+  titleAr   String           @map("title_ar")
+  titleEn   String           @map("title_en")
+  messageAr String           @map("message_ar") @db.Text
+  messageEn String           @map("message_en") @db.Text
+  type      NotificationType @default(GENERAL)
+  courseId  String?          @map("course_id")
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  sender     User?                   @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+  course     Course?                 @relation("CourseNotifications", fields: [courseId], references: [id], onDelete: SetNull)
+  recipients NotificationRecipient[]
+
+  @@map("notifications")
+}
+
+// Notification Recipient Model
+model NotificationRecipient {
+  id             String    @id @default(uuid())
+  notificationId String    @map("notification_id")
+  userId         String    @map("user_id")
+  read           Boolean   @default(false)
+  readAt         DateTime? @map("read_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user         User         @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@map("notification_recipients")
+}
+
+// Banner Model
+model Banner {
+  id        String   @id @default(uuid())
+  image     String
+  titleAr   String   @map("title_ar")
+  titleEn   String   @map("title_en")
+  link      String?
+  order     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("banners")
+}
+
+// Ticket Model
+model Ticket {
+  id          String       @id @default(uuid())
+  userId      String       @map("user_id")
+  title       String
+  message     String       @db.Text
+  attachments Json? // Array of file URLs
+  status      TicketStatus @default(OPEN)
+  adminReply  String?      @map("admin_reply") @db.Text
+  repliedAt   DateTime?    @map("replied_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tickets")
+}
+
+// System Settings Model
+model SystemSettings {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  valueAr     String?  @map("value_ar") @db.Text
+  valueEn     String?  @map("value_en") @db.Text
+  value       Json? // For complex settings
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+// Report Log Model
+model ReportLog {
+  id         String   @id @default(uuid())
+  adminId    String   @map("admin_id")
+  reportType String   @map("report_type")
+  filters    Json? // Report filters
+  fileUrl    String?  @map("file_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("reports_logs")
+}
+
+// Token Blacklist Model
+model TokenBlacklist {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("token_blacklist")
+}

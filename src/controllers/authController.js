@@ -1,0 +1,429 @@
+import prisma from '../config/database.js';
+import { hashPassword, comparePassword } from '../utils/password.js';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
+import { ROLES, USER_STATUS } from '../config/constants.js';
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - role
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [ADMIN, TEACHER, STUDENT]
+ */
+export const login = async (req, res, next) => {
+  try {
+    const { email, password, role } = req.body;
+
+    if (!email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, password, and role are required',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    if (user.role !== role) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid role for this account',
+      });
+    }
+
+    if (user.status === USER_STATUS.BLOCKED) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is blocked',
+      });
+    }
+
+    const isPasswordValid = await comparePassword(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    const accessToken = generateAccessToken({ userId: user.id, role: user.role });
+    const refreshToken = generateRefreshToken({ userId: user.id });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    const { password: _, refreshToken: __, ...userData } = user;
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: userData,
+        accessToken,
+        refreshToken,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @swagger
+ * /api/auth/register/student:
+ *   post:
+ *     summary: Register new student
+ *     tags: [Authentication]
+ */
+export const registerStudent = async (req, res, next) => {
+  try {
+    const {
+      nameAr,
+      nameEn,
+      email,
+      phone,
+      password,
+      repeatPassword,
+      year,
+      semester,
+      department,
+    } = req.body;
+
+    // Validation
+    if (!nameAr || !nameEn || !email || !password || !repeatPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Required fields are missing',
+      });
+    }
+
+    if (password !== repeatPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Passwords do not match',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    // Check if email or phone already exists
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          ...(phone ? [{ phone }] : []),
+        ],
+      },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: existingUser.email === email ? 'Email already exists' : 'Phone already exists',
+      });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const user = await prisma.user.create({
+      data: {
+        nameAr,
+        nameEn,
+        email,
+        phone,
+        password: hashedPassword,
+        role: ROLES.STUDENT,
+        year,
+        semester,
+        department,
+        status: USER_STATUS.ACTIVE,
+      },
+    });
+
+    // Create cart for student
+    await prisma.cart.create({
+      data: {
+        studentId: user.id,
+      },
+    });
+
+    const { password: _, refreshToken: __, ...userData } = user;
+
+    res.status(201).json({
+      success: true,
+      message: 'Student registered successfully',
+      data: { user: userData },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @swagger
+ * /api/auth/register/teacher:
+ *   post:
+ *     summary: Register new teacher (Admin only)
+ *     tags: [Authentication]
+ */
+export const registerTeacher = async (req, res, next) => {
+  try {
+    const {
+      nameAr,
+      nameEn,
+      email,
+      phone,
+      department,
+      password,
+    } = req.body;
+
+    if (!nameAr || !nameEn || !email || !password || !department) {
+      return res.status(400).json({
+        success: false,
+        message: 'Required fields are missing',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          ...(phone ? [{ phone }] : []),
+        ],
+      },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: existingUser.email === email ? 'Email already exists' : 'Phone already exists',
+      });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const user = await prisma.user.create({
+      data: {
+        nameAr,
+        nameEn,
+        email,
+        phone,
+        password: hashedPassword,
+        role: ROLES.TEACHER,
+        department,
+        status: USER_STATUS.ACTIVE,
+      },
+    });
+
+    const { password: _, refreshToken: __, ...userData } = user;
+
+    res.status(201).json({
+      success: true,
+      message: 'Teacher registered successfully',
+      data: { user: userData },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Authentication]
+ */
+export const refreshToken = async (req, res, next) => {
+  try {
+    const { refreshToken: token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required',
+      });
+    }
+
+    const decoded = verifyRefreshToken(token);
+
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, role: true, refreshToken: true, status: true },
+    });
+
+    if (!user || user.refreshToken !== token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token',
+      });
+    }
+
+    if (user.status === USER_STATUS.BLOCKED) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is blocked',
+      });
+    }
+
+    const accessToken = generateAccessToken({ userId: user.id, role: user.role });
+
+    res.json({
+      success: true,
+      data: { accessToken },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ */
+export const logout = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.substring(7);
+
+    if (token) {
+      const decoded = verifyAccessToken(token);
+      if (decoded) {
+        // Add token to blacklist
+        const expiresAt = new Date(decoded.exp * 1000);
+        await prisma.tokenBlacklist.create({
+          data: {
+            token,
+            expiresAt,
+          },
+        });
+      }
+    }
+
+    if (req.user) {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { refreshToken: null },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ */
+export const getMe = async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        nameAr: true,
+        nameEn: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        avatar: true,
+        department: true,
+        year: true,
+        semester: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Check if profile is complete (for students)
+    let profileComplete = true;
+    if (user.role === 'STUDENT') {
+      profileComplete = !!(
+        user.nameAr &&
+        user.nameEn &&
+        user.phone &&
+        user.year !== null &&
+        user.semester !== null
+      );
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          ...user,
+          profileComplete,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
