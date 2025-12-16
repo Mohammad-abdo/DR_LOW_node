@@ -158,3 +158,75 @@ export const notifyFromTeacher = async (studentIds, teacherId, titleAr, titleEn,
   });
 };
 
+/**
+ * Notify students about course content changes (create, update, delete)
+ */
+export const notifyContentChange = async (courseId, action, contentTitleAr, contentTitleEn, senderId = null) => {
+  try {
+    // Get all enrolled students in the course
+    const enrollments = await prisma.purchase.findMany({
+      where: {
+        courseId,
+        payment: {
+          status: 'COMPLETED',
+        },
+      },
+      select: {
+        studentId: true,
+      },
+    });
+
+    if (enrollments.length === 0) {
+      return null; // No enrolled students
+    }
+
+    const studentIds = enrollments.map(e => e.studentId);
+
+    // Get course title for notification
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { titleAr: true, titleEn: true },
+    });
+
+    let titleAr, titleEn, messageAr, messageEn;
+
+    switch (action) {
+      case 'create':
+        titleAr = 'محتوى جديد متاح';
+        titleEn = 'New Content Available';
+        messageAr = `تم إضافة محتوى جديد "${contentTitleAr}" في الدورة "${course?.titleAr}"`;
+        messageEn = `New content "${contentTitleEn}" has been added to the course "${course?.titleEn}"`;
+        break;
+      case 'update':
+        titleAr = 'تم تحديث المحتوى';
+        titleEn = 'Content Updated';
+        messageAr = `تم تحديث المحتوى "${contentTitleAr}" في الدورة "${course?.titleAr}"`;
+        messageEn = `Content "${contentTitleEn}" has been updated in the course "${course?.titleEn}"`;
+        break;
+      case 'delete':
+        titleAr = 'تم حذف المحتوى';
+        titleEn = 'Content Deleted';
+        messageAr = `تم حذف المحتوى "${contentTitleAr}" من الدورة "${course?.titleAr}"`;
+        messageEn = `Content "${contentTitleEn}" has been deleted from the course "${course?.titleEn}"`;
+        break;
+      default:
+        return null;
+    }
+
+    return sendNotification({
+      studentIds,
+      senderId,
+      titleAr,
+      titleEn,
+      messageAr,
+      messageEn,
+      type: NOTIFICATION_TYPE.COURSE,
+      courseId,
+    });
+  } catch (error) {
+    console.error('Error notifying content change:', error);
+    // Don't throw error - notification failure shouldn't break the main operation
+    return null;
+  }
+};
+

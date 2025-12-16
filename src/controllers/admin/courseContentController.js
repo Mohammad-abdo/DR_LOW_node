@@ -1,4 +1,5 @@
 import prisma from '../../config/database.js';
+import { notifyContentChange } from '../../services/notificationService.js';
 
 export const getCourseContent = async (req, res, next) => {
   try {
@@ -106,6 +107,11 @@ export const createCourseContent = async (req, res, next) => {
       },
     });
 
+    // Notify enrolled students about new content (async, don't wait)
+    notifyContentChange(courseId, 'create', titleAr, titleEn, req.user?.id).catch(err => {
+      console.error('Failed to send notification for content creation:', err);
+    });
+
     res.status(201).json({
       success: true,
       message: 'Course content created successfully',
@@ -162,9 +168,22 @@ export const updateCourseContent = async (req, res, next) => {
       if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
     }
 
+    // Get content title before update for notification
+    const oldContent = await prisma.courseContent.findUnique({
+      where: { id: contentId },
+      select: { titleAr: true, titleEn: true },
+    });
+
     const courseContent = await prisma.courseContent.update({
       where: { id: contentId },
       data: updateData,
+    });
+
+    // Notify enrolled students about content update (async, don't wait)
+    const contentTitleAr = titleAr || oldContent?.titleAr || 'المحتوى';
+    const contentTitleEn = titleEn || oldContent?.titleEn || 'Content';
+    notifyContentChange(courseId, 'update', contentTitleAr, contentTitleEn, req.user?.id).catch(err => {
+      console.error('Failed to send notification for content update:', err);
     });
 
     res.json({
@@ -181,9 +200,22 @@ export const deleteCourseContent = async (req, res, next) => {
   try {
     const { courseId, contentId } = req.params;
 
+    // Get content info before deletion for notification
+    const content = await prisma.courseContent.findUnique({
+      where: { id: contentId },
+      select: { titleAr: true, titleEn: true },
+    });
+
     await prisma.courseContent.delete({
       where: { id: contentId },
     });
+
+    // Notify enrolled students about content deletion (async, don't wait)
+    if (content) {
+      notifyContentChange(courseId, 'delete', content.titleAr, content.titleEn, req.user?.id).catch(err => {
+        console.error('Failed to send notification for content deletion:', err);
+      });
+    }
 
     res.json({
       success: true,
