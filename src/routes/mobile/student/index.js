@@ -54,6 +54,9 @@ router.get('/courses/featured/by-year', homeController.getFeaturedCoursesByYear)
 router.get('/courses', courseController.getAllCourses);
 router.get('/courses/:id', courseController.getCourseById);
 
+// Search
+router.get('/search', courseController.searchCourses);
+
 // Cart
 router.get('/cart', cartController.getCart);
 router.post('/cart', cartController.addToCart);
