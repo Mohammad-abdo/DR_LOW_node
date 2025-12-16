@@ -70,10 +70,10 @@ export const reportLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Notification polling rate limiter - 200 requests per minute (increased for polling)
+// Notification polling rate limiter - 500 requests per minute (increased for multiple components polling)
 export const notificationLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 200, // Limit each IP to 200 notification requests per minute (increased for multiple components polling)
+  max: 500, // Limit each IP to 500 notification requests per minute (increased for multiple components polling)
   message: {
     success: false,
     message: 'Too many notification requests, please slow down.',

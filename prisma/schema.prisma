@@ -92,7 +92,7 @@ model User {
   department   String?
   year         Int?
   semester     Int?
-  refreshToken String?    @map("refresh_token")
+  refreshToken String?    @map("refresh_token") @db.Text
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 

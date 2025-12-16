@@ -112,5 +112,26 @@ export const markAllAsRead = async (req, res, next) => {
   }
 };
 
+// Lightweight endpoint to get only unread count (for polling)
+export const getUnreadCount = async (req, res, next) => {
+  try {
+    const unreadCount = await prisma.notificationRecipient.count({
+      where: {
+        userId: req.user.id,
+        read: false,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        unreadCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 

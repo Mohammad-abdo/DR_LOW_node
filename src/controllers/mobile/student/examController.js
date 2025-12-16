@@ -182,11 +182,20 @@ export const getMyExams = async (req, res, next) => {
   }
 };
 
+/**
+ * Get exam details with all questions (for taking the exam)
+ * GET /api/mobile/student/exams/:id
+ * 
+ * This endpoint returns:
+ * - Exam information (title, description, duration, etc.)
+ * - All questions with their options (NO correct answers)
+ * - Course information
+ */
 export const getExamById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Check if student has access to this exam
+    // Get exam with all questions
     const exam = await prisma.exam.findUnique({
       where: { id },
       include: {
@@ -199,16 +208,7 @@ export const getExamById = async (req, res, next) => {
         },
         questions: {
           orderBy: { order: 'asc' },
-          select: {
-            id: true,
-            type: true,
-            questionAr: true,
-            questionEn: true,
-            options: true,
-            points: true,
-            order: true,
-            // Don't include correct answer
-          },
+          // Include all question fields EXCEPT correctAnswer
         },
       },
     });
@@ -217,6 +217,7 @@ export const getExamById = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'Exam not found',
+        messageAr: 'الامتحان غير موجود',
       });
     }
 
@@ -237,10 +238,11 @@ export const getExamById = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         message: 'Course not purchased',
+        messageAr: 'الدورة غير مشتراة',
       });
     }
 
-    // Check if exam already taken
+    // Check if exam already submitted
     const existingResult = await prisma.examResult.findUnique({
       where: {
         examId_studentId: {
@@ -254,10 +256,10 @@ export const getExamById = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'Exam already submitted',
+        messageAr: 'تم إرسال الامتحان مسبقاً',
       });
     }
 
-    // Format response for mobile (consistent with getExamsByCourseId)
     // Get unique exam types from questions
     const types = exam.questions && Array.isArray(exam.questions) && exam.questions.length > 0
       ? [...new Set(exam.questions.map(q => {
@@ -268,65 +270,105 @@ export const getExamById = async (req, res, next) => {
         }))]
       : [];
 
-    const formattedExam = {
-      examID: exam.id,
-      title: exam.titleEn || exam.titleAr,
-      titleAr: exam.titleAr,
-      titleEn: exam.titleEn,
-      description: exam.descriptionEn || exam.descriptionAr,
-      descriptionAr: exam.descriptionAr,
-      descriptionEn: exam.descriptionEn,
-      types, // Array of question types: ["multiple-choice", "true-false", "essay"]
-      questionsCount: exam.questions.length,
-      duration: exam.duration,
-      passingScore: exam.passingScore,
-      startDate: exam.startDate,
-      endDate: exam.endDate,
-      course: exam.course,
-      questions: exam.questions.map(q => {
-        // Parse options if it's a string
-        let parsedOptions = q.options;
-        if (typeof q.options === 'string') {
-          try {
-            parsedOptions = JSON.parse(q.options);
-          } catch (e) {
-            parsedOptions = null;
-          }
+    // Format questions for mobile
+    const formattedQuestions = exam.questions.map(q => {
+      // Parse options if it's a string
+      let parsedOptions = q.options;
+      if (typeof q.options === 'string') {
+        try {
+          parsedOptions = JSON.parse(q.options);
+        } catch (e) {
+          parsedOptions = null;
         }
-        
-        return {
-          questionID: q.id,
-          type: q.type === 'MCQ' ? 'multiple-choice' : 
-                q.type === 'TRUE_FALSE' ? 'true-false' : 
-                q.type === 'ESSAY' ? 'essay' : q.type.toLowerCase(),
-          questionAr: q.questionAr,
-          questionEn: q.questionEn,
-          options: parsedOptions,
-          points: parseFloat(q.points) || 0,
-          order: q.order,
-        };
-      }),
+      }
+      
+      return {
+        questionID: q.id,
+        type: q.type === 'MCQ' ? 'multiple-choice' : 
+              q.type === 'TRUE_FALSE' ? 'true-false' : 
+              q.type === 'ESSAY' ? 'essay' : q.type.toLowerCase(),
+        questionAr: q.questionAr,
+        questionEn: q.questionEn,
+        options: parsedOptions, // For MCQ: {a: {...}, b: {...}, c: {...}, d: {...}}
+        points: parseFloat(q.points) || 0,
+        order: q.order,
+      };
+    });
+
+    // Format response
+    const response = {
+      success: true,
+      data: {
+        exam: {
+          examID: exam.id,
+          title: exam.titleEn || exam.titleAr,
+          titleAr: exam.titleAr,
+          titleEn: exam.titleEn,
+          description: exam.descriptionEn || exam.descriptionAr,
+          descriptionAr: exam.descriptionAr,
+          descriptionEn: exam.descriptionEn,
+          types, // Array: ["multiple-choice", "true-false", "essay"]
+          questionsCount: exam.questions.length,
+          duration: exam.duration, // in minutes
+          passingScore: parseFloat(exam.passingScore) || 60,
+          startDate: exam.startDate,
+          endDate: exam.endDate,
+          course: {
+            courseID: exam.course.id,
+            titleAr: exam.course.titleAr,
+            titleEn: exam.course.titleEn,
+          },
+          questions: formattedQuestions, // All questions with options
+        },
+      },
     };
 
-    res.json({
-      success: true,
-      data: { exam: formattedExam },
-    });
+    res.json(response);
   } catch (error) {
+    console.error('Error in getExamById:', error);
     next(error);
   }
 };
 
+/**
+ * Submit exam answers
+ * POST /api/mobile/student/exams/:examId/submit
+ * 
+ * Request Body:
+ * {
+ *   "answers": [
+ *     {
+ *       "questionID": "question-uuid",
+ *       "answerBody": "a" // or "true"/"false" for true-false, or text for essay
+ *     }
+ *   ]
+ * }
+ * 
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "resultID": "result-uuid",
+ *     "finalScore": 85.5,
+ *     "score": 12.75,
+ *     "totalScore": 15,
+ *     "percentage": 85.5,
+ *     "passed": true,
+ *     "detailedResults": [...]
+ *   }
+ * }
+ */
 export const submitExam = async (req, res, next) => {
   try {
     const { examId } = req.params;
-    const { answers, type } = req.body; // answers: Array of { questionID, answerBody }
+    const { answers } = req.body;
 
-    if (!answers || !Array.isArray(answers)) {
+    // Validate input
+    if (!answers || !Array.isArray(answers) || answers.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Answers are required',
-        messageAr: 'الإجابات مطلوبة',
+        message: 'Answers are required and must be a non-empty array',
+        messageAr: 'الإجابات مطلوبة ويجب أن تكون مصفوفة غير فارغة',
       });
     }
 
@@ -404,7 +446,7 @@ export const submitExam = async (req, res, next) => {
       if (studentAnswerData) {
         // Handle different answer formats
         if (typeof studentAnswerData.answerBody === 'string') {
-          studentAnswer = studentAnswerData.answerBody;
+          studentAnswer = studentAnswerData.answerBody.trim();
         } else if (Array.isArray(studentAnswerData.answerBody)) {
           studentAnswer = JSON.stringify(studentAnswerData.answerBody);
         } else {
@@ -415,10 +457,12 @@ export const submitExam = async (req, res, next) => {
       // Compare answers based on question type
       if (question.type === 'MCQ') {
         // For MCQ, compare as strings (index or option text)
-        isCorrect = studentAnswer.toString().toLowerCase().trim() === question.correctAnswer.toString().toLowerCase().trim();
+        const normalizedStudent = studentAnswer.toLowerCase().trim();
+        const normalizedCorrect = question.correctAnswer.toString().toLowerCase().trim();
+        isCorrect = normalizedStudent === normalizedCorrect;
       } else if (question.type === 'TRUE_FALSE') {
         // For TRUE_FALSE, normalize both answers
-        const normalizedStudent = studentAnswer.toString().toLowerCase().trim();
+        const normalizedStudent = studentAnswer.toLowerCase().trim();
         const normalizedCorrect = question.correctAnswer.toString().toLowerCase().trim();
         isCorrect = normalizedStudent === normalizedCorrect || 
                    (normalizedStudent === 'true' && normalizedCorrect === '1') ||
@@ -441,26 +485,35 @@ export const submitExam = async (req, res, next) => {
           const options = typeof question.options === 'string' 
             ? JSON.parse(question.options) 
             : question.options;
-          if (Array.isArray(options)) {
-            const correctIndex = parseInt(question.correctAnswer);
-            if (!isNaN(correctIndex) && options[correctIndex]) {
-              correctAnswerFormatted = options[correctIndex].textEn || options[correctIndex].textAr || question.correctAnswer;
+          
+          if (options && typeof options === 'object') {
+            // Handle different option formats
+            if (Array.isArray(options)) {
+              const correctIndex = parseInt(question.correctAnswer);
+              if (!isNaN(correctIndex) && options[correctIndex]) {
+                correctAnswerFormatted = options[correctIndex].textEn || 
+                                        options[correctIndex].textAr || 
+                                        question.correctAnswer;
+              }
+            } else {
+              // Object format: {a: {...}, b: {...}}
+              const correctKey = question.correctAnswer.toLowerCase();
+              if (options[correctKey]) {
+                correctAnswerFormatted = options[correctKey].en || 
+                                        options[correctKey].ar || 
+                                        question.correctAnswer;
+              }
             }
           }
         } catch (e) {
           // Keep original correctAnswer if parsing fails
+          console.warn('Error parsing options:', e);
         }
-      }
-
-      // Format student answer for response
-      let studentAnswerFormatted = studentAnswer;
-      if (question.type === 'MCQ' && Array.isArray(studentAnswerData?.answerBody)) {
-        studentAnswerFormatted = studentAnswerData.answerBody;
       }
 
       detailedResults.push({
         questionID: question.id,
-        yourAnswer: studentAnswerFormatted,
+        yourAnswer: studentAnswer,
         correctAnswer: correctAnswerFormatted,
         isCorrect,
         points: parseFloat(question.points),
@@ -478,33 +531,19 @@ export const submitExam = async (req, res, next) => {
     const finalScore = totalScore > 0 ? (earnedScore / totalScore) * 100 : 0;
     const passed = finalScore >= parseFloat(exam.passingScore);
 
-    // Create or update result
-    let result;
-    if (existingResult) {
-      result = await prisma.examResult.update({
-        where: { id: existingResult.id },
-        data: {
-          score: earnedScore,
-          totalScore,
-          percentage: finalScore,
-          passed,
-          submittedAt: new Date(),
-        },
-      });
-    } else {
-      result = await prisma.examResult.create({
-        data: {
-          examId,
-          studentId: req.user.id,
-          score: earnedScore,
-          totalScore,
-          percentage: finalScore,
-          passed,
-          startedAt: new Date(),
-          submittedAt: new Date(),
-        },
-      });
-    }
+    // Create result
+    const result = await prisma.examResult.create({
+      data: {
+        examId,
+        studentId: req.user.id,
+        score: earnedScore,
+        totalScore,
+        percentage: finalScore,
+        passed,
+        startedAt: new Date(),
+        submittedAt: new Date(),
+      },
+    });
 
     // Create answer records
     await Promise.all(
@@ -521,17 +560,24 @@ export const submitExam = async (req, res, next) => {
       )
     );
 
-    // Return response according to specification
+    // Send notification
+    try {
+      await notifyExam(req.user.id, exam.id, passed, finalScore);
+    } catch (notifError) {
+      console.warn('Failed to send notification:', notifError);
+    }
+
+    // Return response
     res.json({
       success: true,
       message: 'Exam submitted successfully',
       messageAr: 'تم إرسال الامتحان بنجاح',
       data: {
         resultID: result.id,
-        finalScore: finalScore,
-        score: earnedScore,
-        totalScore: totalScore,
-        percentage: finalScore,
+        finalScore: parseFloat(finalScore.toFixed(2)),
+        score: parseFloat(earnedScore.toFixed(2)),
+        totalScore: parseFloat(totalScore.toFixed(2)),
+        percentage: parseFloat(finalScore.toFixed(2)),
         passed: passed,
         detailedResults: detailedResults,
       },
@@ -542,6 +588,10 @@ export const submitExam = async (req, res, next) => {
   }
 };
 
+/**
+ * Get exam result (after submission)
+ * GET /api/mobile/student/exams/:id/result
+ */
 export const getExamResult = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -573,6 +623,7 @@ export const getExamResult = async (req, res, next) => {
                 questionEn: true,
                 correctAnswer: true,
                 points: true,
+                type: true,
               },
             },
           },
@@ -584,6 +635,7 @@ export const getExamResult = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'Exam result not found',
+        messageAr: 'نتيجة الامتحان غير موجودة',
       });
     }
 
@@ -592,6 +644,7 @@ export const getExamResult = async (req, res, next) => {
       data: { result },
     });
   } catch (error) {
+    console.error('Error in getExamResult:', error);
     next(error);
   }
 };

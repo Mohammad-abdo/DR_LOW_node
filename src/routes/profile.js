@@ -22,6 +22,7 @@ router.get('/tickets/:id', ticketController.getTicketById);
 
 // Notifications
 router.get('/notifications', notificationController.getMyNotifications);
+router.get('/notifications/unread-count', notificationController.getUnreadCount); // Lightweight endpoint for polling
 router.post('/notifications/:id/read', notificationController.markAsRead);
 router.post('/notifications/read-all', notificationController.markAllAsRead);
 

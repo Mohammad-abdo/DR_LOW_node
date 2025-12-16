@@ -176,19 +176,32 @@ export const requestSizeGuard = (maxSize = 10 * 1024 * 1024) => { // 10MB defaul
 
 /**
  * Request timeout guard - prevents hanging requests
+ * Uses longer timeout for file uploads (videos can be large)
  */
 export const requestTimeoutGuard = (timeoutMs = 30000) => { // 30 seconds default
   return (req, res, next) => {
+    // Check if this is a file upload request
+    const contentType = req.headers['content-type'] || '';
+    const isMultipartUpload = contentType.includes('multipart/form-data');
+    const isUploadRoute = 
+      (req.path.includes('/content') && (req.method === 'POST' || req.method === 'PUT')) ||
+      (req.path.includes('/courses') && (req.method === 'POST' || req.method === 'PUT') && isMultipartUpload) ||
+      (req.path.includes('/banners') && (req.method === 'POST' || req.method === 'PUT')) ||
+      (req.path.includes('/categories') && (req.method === 'POST' || req.method === 'PUT'));
+    
+    // Use longer timeout for file uploads (10 minutes)
+    const actualTimeout = (isMultipartUpload || isUploadRoute) ? 600000 : timeoutMs;
+    
     const timeout = setTimeout(() => {
       if (!res.headersSent) {
-        console.warn(`⚠️ Request timeout: ${req.method} ${req.path} from ${req.ip}`);
+        console.warn(`⚠️ Request timeout: ${req.method} ${req.path} from ${req.ip} (${actualTimeout}ms)`);
         res.status(408).json({
           success: false,
           message: 'Request timeout. Please try again.',
           messageAr: 'انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.',
         });
       }
-    }, timeoutMs);
+    }, actualTimeout);
     
     // Clear timeout when response is sent
     const originalEnd = res.end;

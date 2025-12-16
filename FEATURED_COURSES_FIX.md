@@ -70,3 +70,4 @@ UPDATE courses SET isFeatured = true WHERE id = 'course-id';
 
 
 
+

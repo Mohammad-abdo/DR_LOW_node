@@ -176,3 +176,4 @@ curl -I http://192.168.1.19:5005/uploads/videos/video-*.mp4
 - إعدادات الـ video player في الموبايل
 - مشكلة في الـ network بين الموبايل والسيرفر
 
+

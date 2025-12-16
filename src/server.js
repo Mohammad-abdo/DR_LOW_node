@@ -94,7 +94,7 @@ app.use(
 app.use(rateLimitGuard);
 app.use(duplicateRequestGuard);
 app.use(requestSizeGuard(10 * 1024 * 1024)); // 10MB limit for non-upload requests (upload routes are skipped)
-app.use(requestTimeoutGuard(300000)); // 5 minutes timeout for large file uploads
+app.use(requestTimeoutGuard(600000)); // 10 minutes timeout for large file uploads (videos can be up to 5GB)
 
 // Increase body size limits for large file uploads (videos) - 5GB limit
 app.use(express.json({ limit: '5368709120' })); // 5GB in bytes

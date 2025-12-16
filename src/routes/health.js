@@ -60,3 +60,4 @@ router.get('/video/*', (req, res) => {
 
 export default router;
 
+
