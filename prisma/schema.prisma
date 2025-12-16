@@ -72,6 +72,11 @@ enum NotificationType {
   GENERAL
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
 // User Model
 model User {
   id           String     @id @default(uuid())
@@ -83,6 +88,7 @@ model User {
   role         UserRole   @default(STUDENT)
   status       UserStatus @default(ACTIVE)
   avatar       String?
+  gender       Gender?
   department   String?
   year         Int?
   semester     Int?
@@ -117,6 +123,7 @@ model Category {
   descriptionAr String?  @map("description_ar") @db.Text
   descriptionEn String?  @map("description_en") @db.Text
   image         String?
+  isBasic       Boolean  @default(false) @map("is_basic") // فئة الدورات الأساسية
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -140,6 +147,9 @@ model Course {
   coverImage    String?      @map("cover_image")
   level         CourseLevel  @default(BEGINNER)
   status        CourseStatus @default(DRAFT)
+  isBasic       Boolean      @default(false) @map("is_basic") // دورة أساسية
+  isFeatured    Boolean      @default(false) @map("is_featured") // كورس مشهور
+  targetYear    Int?         @map("target_year") // السنة الدراسية المستهدفة للدورة الأساسية
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
 

@@ -57,7 +57,8 @@ export const getCart = async (req, res, next) => {
     }
 
     const total = cart.items.reduce((sum, item) => {
-      return sum + parseFloat(item.course.finalPrice);
+      const price = parseFloat(item.course?.finalPrice || item.course?.price || 0);
+      return sum + price;
     }, 0);
 
     res.json({

@@ -1,5 +1,6 @@
 import prisma from '../../config/database.js';
 import { COURSE_STATUS } from '../../config/constants.js';
+import { convertImageUrls } from '../../utils/imageHelper.js';
 
 export const getLandingPageData = async (req, res, next) => {
   try {
@@ -13,9 +14,12 @@ export const getLandingPageData = async (req, res, next) => {
         where: { active: true },
         orderBy: { order: 'asc' },
       }),
-      // Featured courses (top purchased)
+      // Featured courses (isFeatured = true or top purchased)
       prisma.course.findMany({
-        where: { status: COURSE_STATUS.PUBLISHED },
+        where: { 
+          status: COURSE_STATUS.PUBLISHED,
+          isFeatured: true,
+        },
         take: 8,
         include: {
           teacher: {
@@ -38,11 +42,14 @@ export const getLandingPageData = async (req, res, next) => {
             },
           },
         },
-        orderBy: {
-          purchases: {
-            _count: 'desc',
+        orderBy: [
+          { isFeatured: 'desc' },
+          {
+            purchases: {
+              _count: 'desc',
+            },
           },
-        },
+        ],
       }),
       // Stats
       Promise.all([
@@ -56,6 +63,10 @@ export const getLandingPageData = async (req, res, next) => {
       ]),
     ]);
 
+    // Convert all image paths to full URLs
+    const bannersWithFullUrls = convertImageUrls(banners, ['image']);
+    const featuredCoursesWithFullUrls = convertImageUrls(featuredCourses, ['coverImage', 'avatar']);
+
     res.json({
       success: true,
       data: {
@@ -65,8 +76,8 @@ export const getLandingPageData = async (req, res, next) => {
           subtitleAr: 'تعلم من أفضل المعلمين في الكويت',
           subtitleEn: 'Learn from the best teachers in Kuwait',
         },
-        banners,
-        featuredCourses,
+        banners: bannersWithFullUrls,
+        featuredCourses: featuredCoursesWithFullUrls,
         stats: {
           students: stats[0],
           teachers: stats[1],

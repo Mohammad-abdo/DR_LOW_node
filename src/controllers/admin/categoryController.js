@@ -84,7 +84,7 @@ export const getCategoryById = async (req, res, next) => {
 
 export const createCategory = async (req, res, next) => {
   try {
-    const { nameAr, nameEn, descriptionAr, descriptionEn } = req.body;
+    const { nameAr, nameEn, descriptionAr, descriptionEn, isBasic = false } = req.body;
     const image = req.file ? `/uploads/images/${req.file.filename}` : null;
 
     if (!nameAr || !nameEn) {
@@ -101,6 +101,7 @@ export const createCategory = async (req, res, next) => {
         descriptionAr,
         descriptionEn,
         image,
+        isBasic: isBasic === 'true' || isBasic === true,
       },
     });
 
@@ -117,7 +118,7 @@ export const createCategory = async (req, res, next) => {
 export const updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { nameAr, nameEn, descriptionAr, descriptionEn } = req.body;
+    const { nameAr, nameEn, descriptionAr, descriptionEn, isBasic } = req.body;
     const image = req.file ? `/uploads/images/${req.file.filename}` : undefined;
 
     const category = await prisma.category.findUnique({ where: { id } });
@@ -129,15 +130,17 @@ export const updateCategory = async (req, res, next) => {
       });
     }
 
+    const updateData = {};
+    if (nameAr) updateData.nameAr = nameAr;
+    if (nameEn) updateData.nameEn = nameEn;
+    if (descriptionAr !== undefined) updateData.descriptionAr = descriptionAr;
+    if (descriptionEn !== undefined) updateData.descriptionEn = descriptionEn;
+    if (image) updateData.image = image;
+    if (isBasic !== undefined) updateData.isBasic = isBasic === 'true' || isBasic === true;
+
     const updatedCategory = await prisma.category.update({
       where: { id },
-      data: {
-        ...(nameAr && { nameAr }),
-        ...(nameEn && { nameEn }),
-        ...(descriptionAr !== undefined && { descriptionAr }),
-        ...(descriptionEn !== undefined && { descriptionEn }),
-        ...(image && { image }),
-      },
+      data: updateData,
     });
 
     res.json({

@@ -37,7 +37,9 @@ async function main() {
     const hashedPassword = await bcrypt.hash("admin123", 10);
     const admin = await prisma.user.upsert({
         where: { email: "admin@lms.edu.kw" },
-        update: {},
+        update: {
+            gender: "MALE",
+        },
         create: {
             nameAr: "مدير النظام",
             nameEn: "System Admin",
@@ -47,41 +49,52 @@ async function main() {
             role: "ADMIN",
             status: "ACTIVE",
             department: "Administration",
+            gender: "MALE",
         },
     });
     console.log("✅ Admin created:", admin.email);
 
-    // Create Law Categories
+    // Create Law Categories with real images and isBasic
     const categories = [
         {
             nameAr: "القانون الدستوري",
             nameEn: "Constitutional Law",
             descriptionAr: "دورات في القانون الدستوري والنظم السياسية",
             descriptionEn: "Courses in constitutional law and political systems",
+            image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&h=600&fit=crop",
+            isBasic: true, // فئة أساسية
         },
         {
             nameAr: "القانون المدني",
             nameEn: "Civil Law",
             descriptionAr: "دورات في القانون المدني والعقود",
             descriptionEn: "Courses in civil law and contracts",
+            image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&h=600&fit=crop",
+            isBasic: true, // فئة أساسية
         },
         {
             nameAr: "القانون الجنائي",
             nameEn: "Criminal Law",
             descriptionAr: "دورات في القانون الجنائي والإجراءات الجزائية",
             descriptionEn: "Courses in criminal law and criminal procedures",
+            image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&h=600&fit=crop",
+            isBasic: false,
         },
         {
             nameAr: "القانون التجاري",
             nameEn: "Commercial Law",
             descriptionAr: "دورات في القانون التجاري والشركات",
             descriptionEn: "Courses in commercial law and companies",
+            image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=600&fit=crop",
+            isBasic: false,
         },
         {
             nameAr: "القانون الإداري",
             nameEn: "Administrative Law",
             descriptionAr: "دورات في القانون الإداري والوظيفة العامة",
             descriptionEn: "Courses in administrative law and public service",
+            image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&h=600&fit=crop",
+            isBasic: false,
         },
     ];
 
@@ -102,6 +115,7 @@ async function main() {
             email: "ahmed.law@lms.edu.kw",
             phone: "+96522345679",
             department: "Law",
+            gender: "MALE",
         },
         {
             nameAr: "د. سارة محمد",
@@ -109,6 +123,7 @@ async function main() {
             email: "sara.law@lms.edu.kw",
             phone: "+96522345680",
             department: "Law",
+            gender: "FEMALE",
         },
         {
             nameAr: "م. علي حسن",
@@ -116,6 +131,7 @@ async function main() {
             email: "ali.law@lms.edu.kw",
             phone: "+96522345681",
             department: "Law",
+            gender: "MALE",
         },
         {
             nameAr: "د. فاطمة العلي",
@@ -123,23 +139,44 @@ async function main() {
             email: "fatima.law@lms.edu.kw",
             phone: "+96522345682",
             department: "Law",
+            gender: "FEMALE",
         },
     ];
 
     const createdTeachers = [];
     const teacherPassword = await bcrypt.hash("teacher123", 10);
     for (const teacherData of teachers) {
-        // Check if user exists by email or phone
-        const existing = await prisma.user.findFirst({
-            where: {
-                OR: [
-                    { email: teacherData.email },
-                    { phone: teacherData.phone }
-                ]
+        // Check if user exists by email or phone using raw SQL to avoid enum issues
+        let existing = null;
+        try {
+            const users = await prisma.$queryRaw`
+                SELECT id, email, name_ar, name_en, gender 
+                FROM users 
+                WHERE email = ${teacherData.email} OR phone = ${teacherData.phone}
+                LIMIT 1
+            `;
+            if (users && users.length > 0) {
+                const user = users[0];
+                existing = {
+                    id: user.id,
+                    email: user.email,
+                    nameAr: user.name_ar,
+                    nameEn: user.name_en,
+                    gender: user.gender === 'MALE' || user.gender === 'FEMALE' ? user.gender : null,
+                };
             }
-        });
+        } catch (error) {
+            console.error(`Error finding teacher ${teacherData.email}:`, error.message);
+        }
 
         if (existing) {
+            // Update gender if missing
+            if (!existing.gender && teacherData.gender) {
+                await prisma.user.update({
+                    where: { id: existing.id },
+                    data: { gender: teacherData.gender },
+                });
+            }
             createdTeachers.push(existing);
             console.log(`ℹ️  Teacher already exists: ${teacherData.nameAr}`);
         } else {
@@ -166,6 +203,7 @@ async function main() {
             department: "Law",
             year: 3,
             semester: 1,
+            gender: "MALE",
         },
         {
             nameAr: "نورا سعيد",
@@ -175,6 +213,7 @@ async function main() {
             department: "Law",
             year: 2,
             semester: 2,
+            gender: "FEMALE",
         },
         {
             nameAr: "علي خالد",
@@ -184,23 +223,44 @@ async function main() {
             department: "Law",
             year: 4,
             semester: 1,
+            gender: "MALE",
         },
     ];
 
     const createdStudents = [];
     const studentPassword = await bcrypt.hash("student123", 10);
     for (const studentData of students) {
-        // Check if user exists by email or phone
-        const existing = await prisma.user.findFirst({
-            where: {
-                OR: [
-                    { email: studentData.email },
-                    { phone: studentData.phone }
-                ]
+        // Check if user exists by email or phone using raw SQL to avoid enum issues
+        let existing = null;
+        try {
+            const users = await prisma.$queryRaw`
+                SELECT id, email, name_ar, name_en, gender 
+                FROM users 
+                WHERE email = ${studentData.email} OR phone = ${studentData.phone}
+                LIMIT 1
+            `;
+            if (users && users.length > 0) {
+                const user = users[0];
+                existing = {
+                    id: user.id,
+                    email: user.email,
+                    nameAr: user.name_ar,
+                    nameEn: user.name_en,
+                    gender: user.gender === 'MALE' || user.gender === 'FEMALE' ? user.gender : null,
+                };
             }
-        });
+        } catch (error) {
+            console.error(`Error finding student ${studentData.email}:`, error.message);
+        }
 
         if (existing) {
+            // Update gender if missing
+            if (!existing.gender && studentData.gender) {
+                await prisma.user.update({
+                    where: { id: existing.id },
+                    data: { gender: studentData.gender },
+                });
+            }
             createdStudents.push(existing);
             console.log(`ℹ️  Student already exists: ${studentData.nameAr}`);
         } else {
@@ -217,7 +277,7 @@ async function main() {
         }
     }
 
-    // Create Law Courses with detailed structure
+    // Create Law Courses with detailed structure, images, isFeatured, and isBasic
     const lawCourses = [
         {
             titleAr: "القانون الدستوري",
@@ -230,6 +290,9 @@ async function main() {
             discount: 0,
             level: "INTERMEDIATE",
             status: "PUBLISHED",
+            coverImage: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&h=800&fit=crop",
+            isBasic: true, // دورة أساسية
+            isFeatured: true, // كورس مشهور
             chapters: [
                 {
                     titleAr: "مقدمة في القانون الدستوري",
@@ -277,6 +340,9 @@ async function main() {
             discount: 0,
             level: "ADVANCED",
             status: "PUBLISHED",
+            coverImage: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1200&h=800&fit=crop",
+            isBasic: false,
+            isFeatured: true, // كورس مشهور
             chapters: [
                 {
                     titleAr: "مقدمة في القانون الجنائي",
@@ -312,6 +378,9 @@ async function main() {
             discount: 0,
             level: "BEGINNER",
             status: "PUBLISHED",
+            coverImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=800&fit=crop",
+            isBasic: false,
+            isFeatured: true, // كورس مشهور
             chapters: [
                 {
                     titleAr: "مبادئ القانون التجاري",
@@ -335,6 +404,115 @@ async function main() {
                 },
             ],
         },
+        // Additional Featured Courses
+        {
+            titleAr: "القانون المدني المتقدم",
+            titleEn: "Advanced Civil Law",
+            descriptionAr: "دورة متقدمة في القانون المدني والعقود والالتزامات",
+            descriptionEn: "Advanced course in civil law, contracts, and obligations",
+            teacherId: createdTeachers[0].id,
+            categoryId: createdCategories[1].id,
+            price: 175.0,
+            discount: 10,
+            level: "ADVANCED",
+            status: "PUBLISHED",
+            coverImage: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1200&h=800&fit=crop",
+            isBasic: true, // دورة أساسية
+            isFeatured: true, // كورس مشهور
+            chapters: [
+                {
+                    titleAr: "مقدمة في القانون المدني",
+                    titleEn: "Introduction to Civil Law",
+                    order: 1,
+                    videos: [
+                        { titleAr: "تعريف القانون المدني", titleEn: "Definition of Civil Law", duration: 40, order: 1 },
+                        { titleAr: "مصادر القانون المدني", titleEn: "Sources of Civil Law", duration: 45, order: 2 },
+                    ],
+                    quizzes: [1],
+                },
+            ],
+        },
+        {
+            titleAr: "القانون الإداري الشامل",
+            titleEn: "Comprehensive Administrative Law",
+            descriptionAr: "دورة شاملة في القانون الإداري والوظيفة العامة والقرارات الإدارية",
+            descriptionEn: "Comprehensive course in administrative law, public service, and administrative decisions",
+            teacherId: createdTeachers[3].id,
+            categoryId: createdCategories[4].id,
+            price: 140.0,
+            discount: 5,
+            level: "INTERMEDIATE",
+            status: "PUBLISHED",
+            coverImage: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1200&h=800&fit=crop",
+            isBasic: true, // دورة أساسية
+            isFeatured: false,
+            chapters: [
+                {
+                    titleAr: "مقدمة في القانون الإداري",
+                    titleEn: "Introduction to Administrative Law",
+                    order: 1,
+                    videos: [
+                        { titleAr: "تعريف القانون الإداري", titleEn: "Definition of Administrative Law", duration: 38, order: 1 },
+                        { titleAr: "الوظيفة العامة", titleEn: "Public Service", duration: 42, order: 2 },
+                    ],
+                    quizzes: [1],
+                },
+            ],
+        },
+        {
+            titleAr: "القانون التجاري الدولي",
+            titleEn: "International Commercial Law",
+            descriptionAr: "دورة متخصصة في القانون التجاري الدولي والمعاملات التجارية الدولية",
+            descriptionEn: "Specialized course in international commercial law and international commercial transactions",
+            teacherId: createdTeachers[2].id,
+            categoryId: createdCategories[3].id,
+            price: 200.0,
+            discount: 15,
+            level: "ADVANCED",
+            status: "PUBLISHED",
+            coverImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=800&fit=crop",
+            isBasic: false,
+            isFeatured: true, // كورس مشهور
+            chapters: [
+                {
+                    titleAr: "مقدمة في القانون التجاري الدولي",
+                    titleEn: "Introduction to International Commercial Law",
+                    order: 1,
+                    videos: [
+                        { titleAr: "تعريف القانون التجاري الدولي", titleEn: "Definition of International Commercial Law", duration: 45, order: 1 },
+                        { titleAr: "المعاملات التجارية الدولية", titleEn: "International Commercial Transactions", duration: 50, order: 2 },
+                    ],
+                    quizzes: [1],
+                },
+            ],
+        },
+        {
+            titleAr: "مبادئ القانون المدني",
+            titleEn: "Principles of Civil Law",
+            descriptionAr: "دورة أساسية في مبادئ القانون المدني للمبتدئين",
+            descriptionEn: "Basic course in principles of civil law for beginners",
+            teacherId: createdTeachers[0].id,
+            categoryId: createdCategories[1].id,
+            price: 80.0,
+            discount: 0,
+            level: "BEGINNER",
+            status: "PUBLISHED",
+            coverImage: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1200&h=800&fit=crop",
+            isBasic: true, // دورة أساسية
+            isFeatured: false,
+            chapters: [
+                {
+                    titleAr: "مقدمة في مبادئ القانون المدني",
+                    titleEn: "Introduction to Principles of Civil Law",
+                    order: 1,
+                    videos: [
+                        { titleAr: "المبادئ الأساسية", titleEn: "Basic Principles", duration: 35, order: 1 },
+                        { titleAr: "تطبيق المبادئ", titleEn: "Application of Principles", duration: 40, order: 2 },
+                    ],
+                    quizzes: [1],
+                },
+            ],
+        },
     ];
 
     const createdCourses = [];
@@ -352,8 +530,11 @@ async function main() {
                 price: courseData.price,
                 discount: courseData.discount,
                 finalPrice: finalPrice,
+                coverImage: courseData.coverImage || null,
                 level: courseData.level,
                 status: courseData.status,
+                isBasic: courseData.isBasic !== undefined ? courseData.isBasic : false,
+                isFeatured: courseData.isFeatured !== undefined ? courseData.isFeatured : false,
             },
         });
         createdCourses.push(course);

@@ -34,7 +34,9 @@ async function main() {
     const hashedPassword = await bcrypt.hash("admin123", 10);
     const admin = await prisma.user.upsert({
         where: { email: "admin@lms.edu.kw" },
-        update: {},
+        update: {
+            gender: "MALE",
+        },
         create: {
             nameAr: "مدير النظام",
             nameEn: "System Admin",
@@ -44,6 +46,7 @@ async function main() {
             role: "ADMIN",
             status: "ACTIVE",
             department: "Administration",
+            gender: "MALE",
         },
     });
     console.log("✅ Super Admin created:", admin.email);
@@ -108,6 +111,7 @@ async function main() {
             email: "ahmed.teacher@lms.edu.kw",
             phone: "+96522345679",
             department: "Computer Science",
+            gender: "MALE",
         },
         {
             nameAr: "فاطمة علي",
@@ -115,6 +119,7 @@ async function main() {
             email: "fatima.teacher@lms.edu.kw",
             phone: "+96522345680",
             department: "Business Administration",
+            gender: "FEMALE",
         },
         {
             nameAr: "خالد حسن",
@@ -122,6 +127,7 @@ async function main() {
             email: "khalid.teacher@lms.edu.kw",
             phone: "+96522345681",
             department: "Engineering",
+            gender: "MALE",
         },
         {
             nameAr: "سارة أحمد",
@@ -129,6 +135,7 @@ async function main() {
             email: "sara.teacher@lms.edu.kw",
             phone: "+96522345682",
             department: "English Language",
+            gender: "FEMALE",
         },
     ];
 
@@ -151,6 +158,13 @@ async function main() {
             createdTeachers.push(teacher);
             console.log(`✅ Teacher created: ${teacher.email}`);
         } else {
+            // Update gender if missing
+            if (!existing.gender && teacherData.gender) {
+                await prisma.user.update({
+                    where: { id: existing.id },
+                    data: { gender: teacherData.gender },
+                });
+            }
             createdTeachers.push(existing);
             console.log(`ℹ️  Teacher already exists: ${teacherData.email}`);
         }
@@ -166,6 +180,7 @@ async function main() {
             department: "Computer Science",
             year: 3,
             semester: 1,
+            gender: "MALE",
         },
         {
             nameAr: "نورا سعيد",
@@ -175,6 +190,7 @@ async function main() {
             department: "Business Administration",
             year: 2,
             semester: 2,
+            gender: "FEMALE",
         },
         {
             nameAr: "علي خالد",
@@ -184,6 +200,7 @@ async function main() {
             department: "Engineering",
             year: 4,
             semester: 1,
+            gender: "MALE",
         },
         {
             nameAr: "مريم يوسف",
@@ -193,6 +210,7 @@ async function main() {
             department: "Computer Science",
             year: 1,
             semester: 1,
+            gender: "FEMALE",
         },
         {
             nameAr: "يوسف أحمد",
@@ -202,6 +220,7 @@ async function main() {
             department: "English Language",
             year: 2,
             semester: 1,
+            gender: "MALE",
         },
     ];
 
@@ -224,6 +243,13 @@ async function main() {
             createdStudents.push(student);
             console.log(`✅ Student created: ${student.email}`);
         } else {
+            // Update gender if missing
+            if (!existing.gender && studentData.gender) {
+                await prisma.user.update({
+                    where: { id: existing.id },
+                    data: { gender: studentData.gender },
+                });
+            }
             createdStudents.push(existing);
             console.log(`ℹ️  Student already exists: ${studentData.email}`);
         }

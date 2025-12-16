@@ -5,6 +5,9 @@ import { ROLES } from '../../../config/constants.js';
 // Course routes
 import * as courseController from '../../../controllers/mobile/student/courseController.js';
 
+// Home routes
+import * as homeController from '../../../controllers/mobile/student/homeController.js';
+
 // Cart routes
 import * as cartController from '../../../controllers/mobile/student/cartController.js';
 
@@ -38,6 +41,15 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(roleMiddleware(ROLES.STUDENT));
 
+// Home
+router.get('/home', homeController.getHomeData);
+router.get('/categories/:categoryId/courses', homeController.getCoursesByCategory);
+router.get('/courses/featured', homeController.getFeaturedCourses);
+router.get('/courses/featured/all-years', homeController.getFeaturedCoursesByAllYears);
+router.get('/courses/basic', homeController.getBasicCourses);
+router.get('/courses/basic/by-year', homeController.getBasicCoursesByYear);
+router.get('/courses/featured/by-year', homeController.getFeaturedCoursesByYear);
+
 // Courses
 router.get('/courses', courseController.getAllCourses);
 router.get('/courses/:id', courseController.getCourseById);
@@ -64,6 +76,7 @@ router.post('/progress', learningController.markContentComplete);
 
 // Exams
 router.get('/exams', examController.getMyExams);
+router.get('/exams/course/:courseID', examController.getExamsByCourseId); // Get exams by course ID
 router.get('/exams/:id', examController.getExamById);
 router.post('/exams/:examId/submit', examController.submitExam);
 router.get('/exams/:id/result', examController.getExamResult);

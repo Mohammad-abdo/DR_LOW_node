@@ -70,6 +70,7 @@ router.get('/reports/student', reportController.generateStudentReport);
 router.get('/reports/teacher', reportController.generateTeacherReport);
 router.get('/reports/students', reportController.generateAllStudentsReport);
 router.get('/reports/teachers', reportController.generateAllTeachersReport);
+router.get('/reports/courses', reportController.generateAllCoursesReport);
 router.get('/reports/financial', reportController.generateFinancialReport);
 
 // Notifications
@@ -133,6 +134,12 @@ router.get('/settings/:key', settingsController.getSettingByKey);
 router.post('/settings', settingsController.createOrUpdateSetting);
 router.put('/settings/:key', settingsController.createOrUpdateSetting);
 router.delete('/settings/:key', settingsController.deleteSetting);
+
+// Student Progress (Admin/Teacher)
+import * as progressController from '../../controllers/admin/progressController.js';
+router.get('/courses/:courseId/students/progress', progressController.getCourseStudentsProgress);
+router.get('/courses/:courseId/students/:studentId/progress', progressController.getStudentCourseProgress);
+router.get('/students/:studentId/progress', progressController.getStudentAllProgress);
 
 export default router;
 

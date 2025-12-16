@@ -515,6 +515,7 @@ export const generateFinancialReport = async (req, res, next) => {
 export const generateAllStudentsReport = async (req, res, next) => {
   try {
     const { format = 'json' } = req.query;
+    console.log('📊 Generating students report, format:', format);
 
     const students = await prisma.user.findMany({
       where: { role: ROLES.STUDENT },
@@ -545,20 +546,49 @@ export const generateAllStudentsReport = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    const reportData = students.map(student => ({
-      id: student.id,
-      nameAr: student.nameAr,
-      nameEn: student.nameEn,
-      email: student.email,
-      phone: student.phone || 'N/A',
-      createdAt: student.createdAt,
-      totalEnrollments: student._count.purchases,
-      totalPayments: student._count.payments,
-      totalCoursesInProgress: student._count.progress,
-      totalSpent: student.purchases.reduce((sum, p) => {
-        return sum + (p.payment?.amount ? parseFloat(p.payment.amount) : 0);
-      }, 0),
-    }));
+    console.log(`📊 Found ${students.length} students`);
+
+    const reportData = students.map(student => {
+      try {
+        const totalSpent = student.purchases.reduce((sum, p) => {
+          try {
+            return sum + (p.payment?.amount ? parseFloat(p.payment.amount) || 0 : 0);
+          } catch (e) {
+            console.warn('Error calculating totalSpent for student:', student.id, e);
+            return sum;
+          }
+        }, 0);
+
+        return {
+          id: student.id,
+          nameAr: student.nameAr || 'N/A',
+          nameEn: student.nameEn || 'N/A',
+          email: student.email || 'N/A',
+          phone: student.phone || 'N/A',
+          createdAt: student.createdAt,
+          totalEnrollments: student._count?.purchases || 0,
+          totalPayments: student._count?.payments || 0,
+          totalCoursesInProgress: student._count?.progress || 0,
+          totalSpent: totalSpent || 0,
+        };
+      } catch (e) {
+        console.error('Error processing student:', student.id, e);
+        return {
+          id: student.id,
+          nameAr: 'Error',
+          nameEn: 'Error',
+          email: student.email || 'N/A',
+          phone: 'N/A',
+          createdAt: student.createdAt,
+          totalEnrollments: 0,
+          totalPayments: 0,
+          totalCoursesInProgress: 0,
+          totalSpent: 0,
+        };
+      }
+    });
+
+    console.log(`📊 Processed ${reportData.length} students for report`);
 
     if (format === 'xlsx' || format === 'excel') {
       const worksheet = XLSX.utils.json_to_sheet(reportData);
@@ -572,36 +602,41 @@ export const generateAllStudentsReport = async (req, res, next) => {
     }
 
     if (format === 'pdf') {
-      const doc = new PDFDocument();
-      const filename = `students-report-${Date.now()}.pdf`;
-      const filepath = path.join(__dirname, '../../uploads/reports', filename);
+      console.log('📄 Starting PDF generation...');
       
-      // Ensure directory exists
-      const dir = path.dirname(filepath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      try {
+        const doc = new PDFDocument();
+        const filename = `students-report-${Date.now()}.pdf`;
+        
+        // Set headers BEFORE piping to response
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        
+        // Pipe PDF directly to response
+        doc.pipe(res);
+        
+        // Handle errors
+        doc.on('error', (err) => {
+          console.error('❌ PDF generation error:', err);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: 'Error generating PDF report',
+              messageAr: 'خطأ في إنشاء تقرير PDF',
+              error: err.message,
+            });
+          }
+        });
 
-      doc.pipe(fs.createWriteStream(filepath));
-      doc.fontSize(20).text('Students Report', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(12).text(`Total Students: ${students.length}`);
-      doc.text(`Generated: ${new Date().toLocaleString()}`);
-      doc.moveDown();
+        // Generate PDF content
+        try {
+          doc.fontSize(20).text('Students Report', { align: 'center' });
+          doc.moveDown();
+          doc.fontSize(12).text(`Total Students: ${students.length}`);
+          doc.text(`Generated: ${new Date().toLocaleString()}`);
+          doc.moveDown();
 
-      // Add table header
-      doc.fontSize(10).text('Name', 50, doc.y, { width: 150 });
-      doc.text('Email', 200, doc.y - 15, { width: 200 });
-      doc.text('Enrollments', 400, doc.y - 15, { width: 80 });
-      doc.text('Total Spent', 480, doc.y - 15, { width: 100 });
-      doc.moveDown(0.5);
-      doc.moveTo(50, doc.y).lineTo(580, doc.y).stroke();
-      doc.moveDown(0.3);
-
-      // Add student rows
-      reportData.forEach((student, index) => {
-        if (doc.y > 700) {
-          doc.addPage();
+          // Add table header
           doc.fontSize(10).text('Name', 50, doc.y, { width: 150 });
           doc.text('Email', 200, doc.y - 15, { width: 200 });
           doc.text('Enrollments', 400, doc.y - 15, { width: 80 });
@@ -609,35 +644,60 @@ export const generateAllStudentsReport = async (req, res, next) => {
           doc.moveDown(0.5);
           doc.moveTo(50, doc.y).lineTo(580, doc.y).stroke();
           doc.moveDown(0.3);
-        }
-        doc.fontSize(9).text(student.nameEn || student.nameAr, 50, doc.y, { width: 150 });
-        doc.text(student.email, 200, doc.y - 12, { width: 200 });
-        doc.text(student.totalEnrollments.toString(), 400, doc.y - 12, { width: 80 });
-        doc.text(`${student.totalSpent.toFixed(2)} KWD`, 480, doc.y - 12, { width: 100 });
-        doc.moveDown(0.4);
-      });
 
-      doc.end();
-
-      return new Promise((resolve, reject) => {
-        doc.on('end', () => {
-          res.setHeader('Content-Type', 'application/pdf');
-          res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-          res.sendFile(filepath, (err) => {
-            if (err) reject(err);
-            else {
-              // Clean up file after sending
-              setTimeout(() => {
-                if (fs.existsSync(filepath)) {
-                  fs.unlinkSync(filepath);
-                }
-              }, 1000);
-              resolve();
+          // Add student rows
+          reportData.forEach((student, index) => {
+            try {
+              if (doc.y > 700) {
+                doc.addPage();
+                doc.fontSize(10).text('Name', 50, doc.y, { width: 150 });
+                doc.text('Email', 200, doc.y - 15, { width: 200 });
+                doc.text('Enrollments', 400, doc.y - 15, { width: 80 });
+                doc.text('Total Spent', 480, doc.y - 15, { width: 100 });
+                doc.moveDown(0.5);
+                doc.moveTo(50, doc.y).lineTo(580, doc.y).stroke();
+                doc.moveDown(0.3);
+              }
+              const name = String(student.nameEn || student.nameAr || 'N/A').substring(0, 30);
+              const email = String(student.email || 'N/A').substring(0, 40);
+              doc.fontSize(9).text(name, 50, doc.y, { width: 150 });
+              doc.text(email, 200, doc.y - 12, { width: 200 });
+              doc.text(String(student.totalEnrollments || 0), 400, doc.y - 12, { width: 80 });
+              doc.text(`${Number(student.totalSpent || 0).toFixed(2)} KWD`, 480, doc.y - 12, { width: 100 });
+              doc.moveDown(0.4);
+            } catch (rowError) {
+              console.error(`Error adding student row ${index}:`, rowError);
+              // Continue with next student
             }
           });
-        });
-        doc.on('error', reject);
-      });
+
+          doc.end();
+          console.log('✅ PDF generation completed');
+          return; // Don't continue to JSON response
+        } catch (contentError) {
+          console.error('❌ Error generating PDF content:', contentError);
+          doc.end();
+          if (!res.headersSent) {
+            return res.status(500).json({
+              success: false,
+              message: 'Error generating PDF content',
+              messageAr: 'خطأ في إنشاء محتوى PDF',
+              error: contentError.message,
+            });
+          }
+        }
+      } catch (pdfError) {
+        console.error('❌ PDF creation error:', pdfError);
+        if (!res.headersSent) {
+          return res.status(500).json({
+            success: false,
+            message: 'Error creating PDF report',
+            messageAr: 'خطأ في إنشاء تقرير PDF',
+            error: pdfError.message,
+            stack: process.env.NODE_ENV === 'development' ? pdfError.stack : undefined,
+          });
+        }
+      }
     }
 
     res.json({
@@ -732,37 +792,41 @@ export const generateAllTeachersReport = async (req, res, next) => {
     }
 
     if (format === 'pdf') {
-      const doc = new PDFDocument();
-      const filename = `teachers-report-${Date.now()}.pdf`;
-      const filepath = path.join(__dirname, '../../uploads/reports', filename);
+      console.log('📄 Starting teachers PDF generation...');
       
-      // Ensure directory exists
-      const dir = path.dirname(filepath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      try {
+        const doc = new PDFDocument();
+        const filename = `teachers-report-${Date.now()}.pdf`;
+        
+        // Set headers BEFORE piping to response
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        
+        // Pipe PDF directly to response
+        doc.pipe(res);
+        
+        // Handle errors
+        doc.on('error', (err) => {
+          console.error('❌ PDF generation error:', err);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: 'Error generating PDF report',
+              messageAr: 'خطأ في إنشاء تقرير PDF',
+              error: err.message,
+            });
+          }
+        });
 
-      doc.pipe(fs.createWriteStream(filepath));
-      doc.fontSize(20).text('Teachers Report', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(12).text(`Total Teachers: ${teachers.length}`);
-      doc.text(`Generated: ${new Date().toLocaleString()}`);
-      doc.moveDown();
+        // Generate PDF content
+        try {
+          doc.fontSize(20).text('Teachers Report', { align: 'center' });
+          doc.moveDown();
+          doc.fontSize(12).text(`Total Teachers: ${teachers.length}`);
+          doc.text(`Generated: ${new Date().toLocaleString()}`);
+          doc.moveDown();
 
-      // Add table header
-      doc.fontSize(10).text('Name', 50, doc.y, { width: 150 });
-      doc.text('Email', 200, doc.y - 15, { width: 200 });
-      doc.text('Courses', 400, doc.y - 15, { width: 60 });
-      doc.text('Enrollments', 460, doc.y - 15, { width: 80 });
-      doc.text('Earnings', 540, doc.y - 15, { width: 100 });
-      doc.moveDown(0.5);
-      doc.moveTo(50, doc.y).lineTo(640, doc.y).stroke();
-      doc.moveDown(0.3);
-
-      // Add teacher rows
-      reportData.forEach((teacher, index) => {
-        if (doc.y > 700) {
-          doc.addPage();
+          // Add table header
           doc.fontSize(10).text('Name', 50, doc.y, { width: 150 });
           doc.text('Email', 200, doc.y - 15, { width: 200 });
           doc.text('Courses', 400, doc.y - 15, { width: 60 });
@@ -771,36 +835,62 @@ export const generateAllTeachersReport = async (req, res, next) => {
           doc.moveDown(0.5);
           doc.moveTo(50, doc.y).lineTo(640, doc.y).stroke();
           doc.moveDown(0.3);
-        }
-        doc.fontSize(9).text(teacher.nameEn || teacher.nameAr, 50, doc.y, { width: 150 });
-        doc.text(teacher.email, 200, doc.y - 12, { width: 200 });
-        doc.text(teacher.totalCourses.toString(), 400, doc.y - 12, { width: 60 });
-        doc.text(teacher.totalEnrollments.toString(), 460, doc.y - 12, { width: 80 });
-        doc.text(`${teacher.totalEarnings.toFixed(2)} KWD`, 540, doc.y - 12, { width: 100 });
-        doc.moveDown(0.4);
-      });
 
-      doc.end();
-
-      return new Promise((resolve, reject) => {
-        doc.on('end', () => {
-          res.setHeader('Content-Type', 'application/pdf');
-          res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-          res.sendFile(filepath, (err) => {
-            if (err) reject(err);
-            else {
-              // Clean up file after sending
-              setTimeout(() => {
-                if (fs.existsSync(filepath)) {
-                  fs.unlinkSync(filepath);
-                }
-              }, 1000);
-              resolve();
+          // Add teacher rows
+          reportData.forEach((teacher, index) => {
+            try {
+              if (doc.y > 700) {
+                doc.addPage();
+                doc.fontSize(10).text('Name', 50, doc.y, { width: 150 });
+                doc.text('Email', 200, doc.y - 15, { width: 200 });
+                doc.text('Courses', 400, doc.y - 15, { width: 60 });
+                doc.text('Enrollments', 460, doc.y - 15, { width: 80 });
+                doc.text('Earnings', 540, doc.y - 15, { width: 100 });
+                doc.moveDown(0.5);
+                doc.moveTo(50, doc.y).lineTo(640, doc.y).stroke();
+                doc.moveDown(0.3);
+              }
+              const name = String(teacher.nameEn || teacher.nameAr || 'N/A').substring(0, 30);
+              const email = String(teacher.email || 'N/A').substring(0, 40);
+              doc.fontSize(9).text(name, 50, doc.y, { width: 150 });
+              doc.text(email, 200, doc.y - 12, { width: 200 });
+              doc.text(String(teacher.totalCourses || 0), 400, doc.y - 12, { width: 60 });
+              doc.text(String(teacher.totalEnrollments || 0), 460, doc.y - 12, { width: 80 });
+              doc.text(`${Number(teacher.totalEarnings || 0).toFixed(2)} KWD`, 540, doc.y - 12, { width: 100 });
+              doc.moveDown(0.4);
+            } catch (rowError) {
+              console.error(`Error adding teacher row ${index}:`, rowError);
+              // Continue with next teacher
             }
           });
-        });
-        doc.on('error', reject);
-      });
+
+          doc.end();
+          console.log('✅ Teachers PDF generation completed');
+          return; // Don't continue to JSON response
+        } catch (contentError) {
+          console.error('❌ Error generating PDF content:', contentError);
+          doc.end();
+          if (!res.headersSent) {
+            return res.status(500).json({
+              success: false,
+              message: 'Error generating PDF content',
+              messageAr: 'خطأ في إنشاء محتوى PDF',
+              error: contentError.message,
+            });
+          }
+        }
+      } catch (pdfError) {
+        console.error('❌ PDF creation error:', pdfError);
+        if (!res.headersSent) {
+          return res.status(500).json({
+            success: false,
+            message: 'Error creating PDF report',
+            messageAr: 'خطأ في إنشاء تقرير PDF',
+            error: pdfError.message,
+            stack: process.env.NODE_ENV === 'development' ? pdfError.stack : undefined,
+          });
+        }
+      }
     }
 
     res.json({
@@ -809,6 +899,205 @@ export const generateAllTeachersReport = async (req, res, next) => {
       total: teachers.length,
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+// Generate report for all courses
+export const generateAllCoursesReport = async (req, res, next) => {
+  try {
+    const { format = 'json' } = req.query;
+
+    const courses = await prisma.course.findMany({
+      include: {
+        teacher: {
+          select: {
+            nameAr: true,
+            nameEn: true,
+            email: true,
+          },
+        },
+        category: {
+          select: {
+            nameAr: true,
+            nameEn: true,
+          },
+        },
+        _count: {
+          select: {
+            purchases: true,
+            ratings: true,
+            content: true,
+          },
+        },
+        ratings: {
+          select: {
+            rating: true,
+          },
+        },
+        purchases: {
+          include: {
+            payment: {
+              where: {
+                status: PAYMENT_STATUS.COMPLETED,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const reportData = courses.map(course => {
+      const averageRating = course.ratings.length > 0
+        ? course.ratings.reduce((sum, r) => sum + r.rating, 0) / course.ratings.length
+        : 0;
+
+      const totalRevenue = course.purchases.reduce((sum, p) => {
+        return sum + (p.payment?.amount ? parseFloat(p.payment.amount) : 0);
+      }, 0);
+
+      return {
+        id: course.id,
+        titleAr: course.titleAr,
+        titleEn: course.titleEn,
+        teacher: course.teacher.nameEn || course.teacher.nameAr || 'N/A',
+        category: course.category.nameEn || course.category.nameAr || 'N/A',
+        price: course.price,
+        status: course.status,
+        level: course.level,
+        enrollments: course._count.purchases,
+        ratings: course._count.ratings,
+        averageRating: averageRating.toFixed(2),
+        contentCount: course._count.content,
+        totalRevenue: totalRevenue.toFixed(2),
+        isFeatured: course.isFeatured || false,
+        isBasic: course.isBasic || false,
+        createdAt: course.createdAt,
+      };
+    });
+
+    if (format === 'xlsx' || format === 'excel') {
+      const worksheet = XLSX.utils.json_to_sheet(reportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Courses');
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=courses-report-${Date.now()}.xlsx`);
+      return res.send(buffer);
+    }
+
+    if (format === 'pdf') {
+      console.log('📄 Starting courses PDF generation...');
+      
+      try {
+        const doc = new PDFDocument();
+        const filename = `courses-report-${Date.now()}.pdf`;
+        
+        // Set headers BEFORE piping to response
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        
+        // Pipe PDF directly to response
+        doc.pipe(res);
+        
+        // Handle errors
+        doc.on('error', (err) => {
+          console.error('❌ PDF generation error:', err);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: 'Error generating PDF report',
+              messageAr: 'خطأ في إنشاء تقرير PDF',
+              error: err.message,
+            });
+          }
+        });
+
+        // Generate PDF content
+        try {
+          doc.fontSize(20).text('Courses Report', { align: 'center' });
+          doc.moveDown();
+          doc.fontSize(12).text(`Total Courses: ${courses.length}`);
+          doc.text(`Generated: ${new Date().toLocaleString()}`);
+          doc.moveDown();
+
+          // Add table header
+          doc.fontSize(9).text('Title', 50, doc.y, { width: 150 });
+          doc.text('Teacher', 200, doc.y - 12, { width: 120 });
+          doc.text('Category', 320, doc.y - 12, { width: 100 });
+          doc.text('Enrollments', 420, doc.y - 12, { width: 70 });
+          doc.text('Revenue', 490, doc.y - 12, { width: 80 });
+          doc.moveDown(0.5);
+          doc.moveTo(50, doc.y).lineTo(570, doc.y).stroke();
+          doc.moveDown(0.3);
+
+          // Add course rows
+          reportData.forEach((course, index) => {
+            try {
+              if (doc.y > 700) {
+                doc.addPage();
+                doc.fontSize(9).text('Title', 50, doc.y, { width: 150 });
+                doc.text('Teacher', 200, doc.y - 12, { width: 120 });
+                doc.text('Category', 320, doc.y - 12, { width: 100 });
+                doc.text('Enrollments', 420, doc.y - 12, { width: 70 });
+                doc.text('Revenue', 490, doc.y - 12, { width: 80 });
+                doc.moveDown(0.5);
+                doc.moveTo(50, doc.y).lineTo(570, doc.y).stroke();
+                doc.moveDown(0.3);
+              }
+              const title = String(course.titleEn || course.titleAr || 'N/A').substring(0, 30);
+              const teacher = String(course.teacher || 'N/A').substring(0, 20);
+              const category = String(course.category || 'N/A').substring(0, 20);
+              doc.fontSize(8).text(title, 50, doc.y, { width: 150 });
+              doc.text(teacher, 200, doc.y - 10, { width: 120 });
+              doc.text(category, 320, doc.y - 10, { width: 100 });
+              doc.text(String(course.enrollments || 0), 420, doc.y - 10, { width: 70 });
+              doc.text(`${course.totalRevenue || '0.00'} KWD`, 490, doc.y - 10, { width: 80 });
+              doc.moveDown(0.3);
+            } catch (rowError) {
+              console.error(`Error adding course row ${index}:`, rowError);
+              // Continue with next course
+            }
+          });
+
+          doc.end();
+          console.log('✅ Courses PDF generation completed');
+          return; // Don't continue to JSON response
+        } catch (contentError) {
+          console.error('❌ Error generating PDF content:', contentError);
+          doc.end();
+          if (!res.headersSent) {
+            return res.status(500).json({
+              success: false,
+              message: 'Error generating PDF content',
+              messageAr: 'خطأ في إنشاء محتوى PDF',
+              error: contentError.message,
+            });
+          }
+        }
+      } catch (pdfError) {
+        console.error('❌ PDF creation error:', pdfError);
+        if (!res.headersSent) {
+          return res.status(500).json({
+            success: false,
+            message: 'Error creating PDF report',
+            messageAr: 'خطأ في إنشاء تقرير PDF',
+            error: pdfError.message,
+            stack: process.env.NODE_ENV === 'development' ? pdfError.stack : undefined,
+          });
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: reportData,
+      total: courses.length,
+    });
+  } catch (error) {
+    console.error('Error generating courses report:', error);
     next(error);
   }
 };

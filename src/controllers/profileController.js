@@ -13,6 +13,7 @@ export const getProfile = async (req, res, next) => {
         role: true,
         status: true,
         avatar: true,
+        gender: true,
         department: true,
         year: true,
         semester: true,
@@ -49,56 +50,113 @@ export const getProfile = async (req, res, next) => {
 
 export const updateProfile = async (req, res, next) => {
   try {
-    const { nameAr, nameEn, phone, department, year, semester } = req.body;
+    // Security: Only allow specific fields to be updated (whitelist approach)
+    const allowedFields = ['nameAr', 'nameEn', 'phone', 'department', 'year', 'semester', 'gender'];
+    const updateData = {};
+
+    // Extract only allowed fields from body
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    }
+
+    // Handle avatar separately (from file upload)
     const avatar = req.file ? `/uploads/avatars/${req.file.filename}` : undefined;
+    if (avatar) updateData.avatar = avatar;
 
-    // Check phone uniqueness if changed
-    if (phone) {
-      const existing = await prisma.user.findFirst({
-        where: {
-          phone,
-          id: { not: req.user.id },
-        },
-      });
-
-      if (existing) {
-        return res.status(409).json({
+    // Security: Prevent updating sensitive fields
+    const forbiddenFields = ['id', 'email', 'password', 'role', 'status', 'refreshToken', 'createdAt', 'updatedAt'];
+    for (const field of forbiddenFields) {
+      if (req.body[field] !== undefined) {
+        return res.status(403).json({
           success: false,
-          message: 'Phone number already exists',
+          message: `Field '${field}' cannot be updated`,
         });
       }
     }
 
-    const updateData = {};
-    if (nameAr) updateData.nameAr = nameAr;
-    if (nameEn) updateData.nameEn = nameEn;
-    if (phone !== undefined) updateData.phone = phone;
-    if (department) updateData.department = department;
+    // Validation: Required fields
+    if (updateData.nameAr !== undefined && !updateData.nameAr.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name (Arabic) is required',
+      });
+    }
+
+    if (updateData.nameEn !== undefined && !updateData.nameEn.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name (English) is required',
+      });
+    }
+
+    // Validation: Gender enum
+    if (updateData.gender !== undefined && updateData.gender !== null && updateData.gender !== '') {
+      if (!['MALE', 'FEMALE'].includes(updateData.gender)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Gender must be either MALE or FEMALE',
+        });
+      }
+    } else if (updateData.gender === '') {
+      updateData.gender = null;
+    }
+
+    // Check phone uniqueness if changed
+    if (updateData.phone !== undefined) {
+      if (updateData.phone && updateData.phone.trim()) {
+        const existing = await prisma.user.findFirst({
+          where: {
+            phone: updateData.phone.trim(),
+            id: { not: req.user.id },
+          },
+        });
+
+        if (existing) {
+          return res.status(409).json({
+            success: false,
+            message: 'Phone number already exists',
+          });
+        }
+        updateData.phone = updateData.phone.trim();
+      } else {
+        updateData.phone = null;
+      }
+    }
+
     // Convert year and semester to integers if provided
-    if (year !== undefined && year !== null && year !== '') {
-      updateData.year = parseInt(year, 10);
+    if (updateData.year !== undefined && updateData.year !== null && updateData.year !== '') {
+      updateData.year = parseInt(updateData.year, 10);
       if (isNaN(updateData.year)) {
         return res.status(400).json({
           success: false,
           message: 'Year must be a valid number',
         });
       }
-    } else if (year === '' || year === null) {
+    } else if (updateData.year === '' || updateData.year === null) {
       updateData.year = null;
     }
-    if (semester !== undefined && semester !== null && semester !== '') {
-      updateData.semester = parseInt(semester, 10);
+
+    if (updateData.semester !== undefined && updateData.semester !== null && updateData.semester !== '') {
+      updateData.semester = parseInt(updateData.semester, 10);
       if (isNaN(updateData.semester)) {
         return res.status(400).json({
           success: false,
           message: 'Semester must be a valid number',
         });
       }
-    } else if (semester === '' || semester === null) {
+    } else if (updateData.semester === '' || updateData.semester === null) {
       updateData.semester = null;
     }
-    if (avatar) updateData.avatar = avatar;
 
+    // Trim string fields
+    if (updateData.nameAr) updateData.nameAr = updateData.nameAr.trim();
+    if (updateData.nameEn) updateData.nameEn = updateData.nameEn.trim();
+    if (updateData.department) updateData.department = updateData.department.trim();
+
+    // Security: Ensure user can only update their own profile
+    // req.user.id is set by auth middleware from JWT token, so it's secure
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: updateData,
@@ -110,6 +168,7 @@ export const updateProfile = async (req, res, next) => {
         phone: true,
         role: true,
         avatar: true,
+        gender: true,
         department: true,
         year: true,
         semester: true,

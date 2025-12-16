@@ -113,6 +113,7 @@ export const registerStudent = async (req, res, next) => {
       phone,
       password,
       repeatPassword,
+      gender,
       year,
       semester,
       department,
@@ -137,6 +138,14 @@ export const registerStudent = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'Password must be at least 6 characters',
+      });
+    }
+
+    // Validate gender if provided
+    if (gender && !['MALE', 'FEMALE'].includes(gender)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Gender must be either MALE or FEMALE',
       });
     }
 
@@ -167,6 +176,7 @@ export const registerStudent = async (req, res, next) => {
         phone,
         password: hashedPassword,
         role: ROLES.STUDENT,
+        gender: gender || null,
         year,
         semester,
         department,
@@ -315,10 +325,20 @@ export const refreshToken = async (req, res, next) => {
     }
 
     const accessToken = generateAccessToken({ userId: user.id, role: user.role });
+    const newRefreshToken = generateRefreshToken({ userId: user.id });
+
+    // Update refresh token in database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: newRefreshToken },
+    });
 
     res.json({
       success: true,
-      data: { accessToken },
+      data: { 
+        accessToken,
+        refreshToken: newRefreshToken,
+      },
     });
   } catch (error) {
     next(error);
@@ -391,6 +411,7 @@ export const getMe = async (req, res, next) => {
         role: true,
         status: true,
         avatar: true,
+        gender: true,
         department: true,
         year: true,
         semester: true,

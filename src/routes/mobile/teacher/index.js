@@ -41,6 +41,11 @@ router.get('/exams/:examId/results', examController.getExamResults);
 router.post('/notifications', notificationController.sendNotification);
 router.get('/notifications', notificationController.getMyNotifications);
 
+// Student Progress (Teacher can view progress for their courses)
+import * as progressController from '../../../controllers/admin/progressController.js';
+router.get('/courses/:courseId/students/progress', progressController.getCourseStudentsProgress);
+router.get('/courses/:courseId/students/:studentId/progress', progressController.getStudentCourseProgress);
+
 export default router;
 
 

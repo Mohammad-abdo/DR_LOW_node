@@ -133,6 +133,9 @@ export const createCourse = async (req, res, next) => {
       discount = 0,
       level,
       status,
+      isBasic = false,
+      isFeatured = false,
+      targetYear,
     } = req.body;
 
     const coverImage = req.file ? `/uploads/images/${req.file.filename}` : null;
@@ -160,6 +163,9 @@ export const createCourse = async (req, res, next) => {
         coverImage,
         level: level || COURSE_LEVEL.BEGINNER,
         status: status || COURSE_STATUS.DRAFT,
+        isBasic: isBasic === 'true' || isBasic === true,
+        isFeatured: isFeatured === 'true' || isFeatured === true,
+        targetYear: targetYear ? parseInt(targetYear) : null,
       },
       include: {
         teacher: {
@@ -203,6 +209,9 @@ export const updateCourse = async (req, res, next) => {
       discount,
       level,
       status,
+      isBasic,
+      isFeatured,
+      targetYear,
     } = req.body;
 
     const coverImage = req.file ? `/uploads/images/${req.file.filename}` : undefined;
@@ -228,6 +237,9 @@ export const updateCourse = async (req, res, next) => {
     if (coverImage) updateData.coverImage = coverImage;
     if (level) updateData.level = level;
     if (status) updateData.status = status;
+    if (isBasic !== undefined) updateData.isBasic = isBasic === 'true' || isBasic === true;
+    if (isFeatured !== undefined) updateData.isFeatured = isFeatured === 'true' || isFeatured === true;
+    if (targetYear !== undefined) updateData.targetYear = targetYear ? parseInt(targetYear) : null;
 
     if (price || discount !== undefined) {
       const finalPrice = (updateData.price || course.price) * (1 - (updateData.discount || course.discount) / 100);

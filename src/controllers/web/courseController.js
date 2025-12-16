@@ -1,5 +1,6 @@
 import prisma from '../../config/database.js';
 import { COURSE_STATUS } from '../../config/constants.js';
+import { convertImageUrls } from '../../utils/imageHelper.js';
 
 export const getAllCourses = async (req, res, next) => {
   try {
@@ -69,10 +70,13 @@ export const getAllCourses = async (req, res, next) => {
       })
     );
 
+    // Convert all image paths to full URLs
+    const coursesWithFullUrls = convertImageUrls(coursesWithRatings, ['coverImage', 'avatar']);
+
     res.json({
       success: true,
       data: {
-        courses: coursesWithRatings,
+        courses: coursesWithFullUrls,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -136,13 +140,16 @@ export const getCourseById = async (req, res, next) => {
       ? course.ratings.reduce((sum, r) => sum + r.rating, 0) / course.ratings.length
       : 0;
 
+    // Convert all image paths to full URLs
+    const courseWithFullUrls = convertImageUrls({
+      ...course,
+      averageRating,
+    }, ['coverImage', 'avatar']);
+
     res.json({
       success: true,
       data: {
-        course: {
-          ...course,
-          averageRating,
-        },
+        course: courseWithFullUrls,
       },
     });
   } catch (error) {
@@ -163,9 +170,12 @@ export const getAllCategories = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
+    // Convert all image paths to full URLs
+    const categoriesWithFullUrls = convertImageUrls(categories, ['image']);
+
     res.json({
       success: true,
-      data: { categories },
+      data: { categories: categoriesWithFullUrls },
     });
   } catch (error) {
     next(error);

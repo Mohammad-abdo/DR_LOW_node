@@ -11,9 +11,15 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
     "prisma:seed:exams": "node prisma/seed_exams.js",
+    "prisma:fix:gender": "node prisma/fix_gender.js",
     "prisma:studio": "prisma studio"
   },
-  "keywords": ["lms", "university", "kuwait", "education"],
+  "keywords": [
+    "lms",
+    "university",
+    "kuwait",
+    "education"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -22,20 +28,18 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "express-rate-limit": "^7.5.1",
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.14.0",
     "socket.io": "^4.5.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
-    "xlsx": "^0.18.5",
-    "pdfkit": "^0.14.0"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",
     "prisma": "^5.7.1"
   }
 }
-
-
-

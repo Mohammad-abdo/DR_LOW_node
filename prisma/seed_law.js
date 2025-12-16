@@ -37,7 +37,9 @@ async function main() {
     const hashedPassword = await bcrypt.hash("admin123", 10);
     const admin = await prisma.user.upsert({
         where: { email: "admin@lms.edu.kw" },
-        update: {},
+        update: {
+            gender: "MALE",
+        },
         create: {
             nameAr: "مدير النظام",
             nameEn: "System Admin",
@@ -47,6 +49,7 @@ async function main() {
             role: "ADMIN",
             status: "ACTIVE",
             department: "Administration",
+            gender: "MALE",
         },
     });
     console.log("✅ Admin created:", admin.email);
@@ -102,6 +105,7 @@ async function main() {
             email: "ahmed.law@lms.edu.kw",
             phone: "+96522345679",
             department: "Law",
+            gender: "MALE",
         },
         {
             nameAr: "د. سارة محمد",
@@ -109,6 +113,7 @@ async function main() {
             email: "sara.law@lms.edu.kw",
             phone: "+96522345680",
             department: "Law",
+            gender: "FEMALE",
         },
         {
             nameAr: "م. علي حسن",
@@ -116,6 +121,7 @@ async function main() {
             email: "ali.law@lms.edu.kw",
             phone: "+96522345681",
             department: "Law",
+            gender: "MALE",
         },
         {
             nameAr: "د. فاطمة العلي",
@@ -123,6 +129,7 @@ async function main() {
             email: "fatima.law@lms.edu.kw",
             phone: "+96522345682",
             department: "Law",
+            gender: "FEMALE",
         },
     ];
 
@@ -131,7 +138,9 @@ async function main() {
     for (const teacherData of teachers) {
         const teacher = await prisma.user.upsert({
             where: { email: teacherData.email },
-            update: {},
+            update: {
+                gender: teacherData.gender,
+            },
             create: {
                 ...teacherData,
                 password: teacherPassword,
@@ -153,6 +162,7 @@ async function main() {
             department: "Law",
             year: 3,
             semester: 1,
+            gender: "MALE",
         },
         {
             nameAr: "نورا سعيد",
@@ -162,6 +172,7 @@ async function main() {
             department: "Law",
             year: 2,
             semester: 2,
+            gender: "FEMALE",
         },
         {
             nameAr: "علي خالد",
@@ -171,6 +182,7 @@ async function main() {
             department: "Law",
             year: 4,
             semester: 1,
+            gender: "MALE",
         },
     ];
 
@@ -179,7 +191,9 @@ async function main() {
     for (const studentData of students) {
         const student = await prisma.user.upsert({
             where: { email: studentData.email },
-            update: {},
+            update: {
+                gender: studentData.gender,
+            },
             create: {
                 ...studentData,
                 password: studentPassword,

@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
+import { apiLimiter, authLimiter, notificationLimiter } from "./middlewares/rateLimiter.js";
+import { duplicateRequestGuard, rateLimitGuard, requestSizeGuard, requestTimeoutGuard } from "./middlewares/requestGuard.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 import os from "os";
@@ -88,16 +90,38 @@ app.use(
         credentials: true,
     })
 );
+// Request guards - protect against infinite loops and duplicate requests
+app.use(rateLimitGuard);
+app.use(duplicateRequestGuard);
+app.use(requestSizeGuard(10 * 1024 * 1024)); // 10MB limit for non-upload requests (upload routes are skipped)
+app.use(requestTimeoutGuard(300000)); // 5 minutes timeout for large file uploads
+
 // Increase body size limits for large file uploads (videos) - 5GB limit
 app.use(express.json({ limit: '5368709120' })); // 5GB in bytes
 app.use(express.urlencoded({ extended: true, limit: '5368709120' })); // 5GB in bytes
+
+// Apply rate limiting to all API routes
+app.use('/api', apiLimiter);
 
 // Serve uploaded files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadsPath = path.join(__dirname, "../uploads");
 console.log("📁 Serving uploads from:", uploadsPath);
-app.use("/uploads", express.static(uploadsPath));
+
+// Serve static files with proper headers for videos
+app.use("/uploads", express.static(uploadsPath, {
+  setHeaders: (res, filePath) => {
+    // Set proper headers for video files
+    if (filePath.endsWith('.mp4') || filePath.endsWith('.webm')) {
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+    }
+  },
+  // Handle errors gracefully
+  fallthrough: false,
+}));
 
 // Health check
 app.get("/health", (req, res) => {
@@ -134,16 +158,21 @@ app.get("/health/db", async (req, res) => {
     }
 });
 
+// Health check routes (before API routes to avoid auth middleware)
+import healthRoutes from "./routes/health.js";
+app.use("/health", healthRoutes);
+
 // API Documentation
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Routes
-app.use("/api/auth", authRoutes);
+// Routes with specific rate limiters
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/mobile/student", studentMobileRoutes);
 app.use("/api/mobile/teacher", teacherMobileRoutes);
 app.use("/api/mobile/admin", adminMobileRoutes);
 app.use("/api/web", webRoutes);
+app.use("/api/notifications", notificationLimiter); // Apply notification limiter before profile routes
 app.use("/api", profileRoutes);
 
 // Error handling

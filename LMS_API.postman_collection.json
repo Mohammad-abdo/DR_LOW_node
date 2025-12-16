@@ -126,13 +126,88 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nameAr\": \"محمد أحمد\",\n  \"nameEn\": \"Mohamed Ahmed\",\n  \"email\": \"student@example.com\",\n  \"phone\": \"+96512345678\",\n  \"password\": \"password123\",\n  \"repeatPassword\": \"password123\",\n  \"year\": 3,\n  \"semester\": 1,\n  \"department\": \"Computer Science\"\n}",
+              "raw": "{\n  \"nameAr\": \"محمد أحمد\",\n  \"nameEn\": \"Mohamed Ahmed\",\n  \"email\": \"student.test@example.com\",\n  \"phone\": \"+96512345678\",\n  \"password\": \"password123\",\n  \"repeatPassword\": \"password123\",\n  \"gender\": \"MALE\",\n  \"year\": 3,\n  \"semester\": 1,\n  \"department\": \"Law\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Register a new student account. Gender is optional (MALE or FEMALE)."
+          }
+        },
+        {
+          "name": "Register Student (Female Example)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/register/student",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register",
+                "student"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"نورا سعيد\",\n  \"nameEn\": \"Nora Saeed\",\n  \"email\": \"nora.test@example.com\",\n  \"phone\": \"+96512345679\",\n  \"password\": \"password123\",\n  \"repeatPassword\": \"password123\",\n  \"gender\": \"FEMALE\",\n  \"year\": 2,\n  \"semester\": 2,\n  \"department\": \"Law\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Example: Register a female student with gender field."
+          }
+        },
+        {
+          "name": "Register Student (No Gender)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/register/student",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register",
+                "student"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"علي خالد\",\n  \"nameEn\": \"Ali Khalid\",\n  \"email\": \"ali.test@example.com\",\n  \"phone\": \"+96512345680\",\n  \"password\": \"password123\",\n  \"repeatPassword\": \"password123\",\n  \"year\": 4,\n  \"semester\": 1,\n  \"department\": \"Law\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Example: Register a student without gender (gender is optional)."
           }
         },
         {
@@ -247,7 +322,8 @@
                 "me"
               ]
             }
-          }
+          },
+          "description": "Get current authenticated user profile including gender field."
         }
       ]
     },
@@ -2520,6 +2596,279 @@
       "name": "Student (Mobile)",
       "item": [
         {
+          "name": "Get Home Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mobile/student/home",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "student",
+                "home"
+              ]
+            }
+          },
+          "description": "Get home page data including banners, popular courses, and courses by categories."
+        },
+        {
+          "name": "Get Courses by Category",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mobile/student/categories/:categoryId/courses?page=1&limit=12",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "student",
+                "categories",
+                ":categoryId",
+                "courses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "level",
+                  "value": "",
+                  "description": "Filter by level (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search term (optional)",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "description": "Get courses by category ID with pagination and filters."
+        },
+        {
+          "name": "Get Featured Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mobile/student/courses/featured?page=1&limit=12",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "student",
+                "courses",
+                "featured"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page"
+                }
+              ]
+            }
+          },
+          "description": "Get featured/popular courses (isFeatured: true) with pagination."
+        },
+        {
+          "name": "Get Basic Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mobile/student/courses/basic?page=1&limit=12",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "student",
+                "courses",
+                "basic"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "Filter by category ID (optional)",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "description": "Get basic courses (isBasic: true) with pagination. Can be filtered by category."
+        },
+        {
+          "name": "Get Basic Courses by Year",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mobile/student/courses/basic/by-year?year=1&page=1&limit=12",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "student",
+                "courses",
+                "basic",
+                "by-year"
+              ],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "1",
+                  "description": "Academic year (1, 2, 3, 4, etc.)"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page"
+                }
+              ]
+            }
+          },
+          "description": "Get basic courses filtered by targetYear. Returns courses where isBasic: true and targetYear matches the provided year."
+        },
+        {
+          "name": "Get Featured Courses by Year",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mobile/student/courses/featured/by-year?year=1&page=1&limit=12",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "student",
+                "courses",
+                "featured",
+                "by-year"
+              ],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "1",
+                  "description": "Academic year (1, 2, 3, 4, etc.)"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page"
+                }
+              ]
+            }
+          },
+          "description": "Get featured courses filtered by targetYear. Returns courses where isFeatured: true and targetYear matches the provided year."
+        },
+        {
+          "name": "Get Featured Courses by All Years",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mobile/student/courses/featured/all-years",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "student",
+                "courses",
+                "featured",
+                "all-years"
+              ]
+            }
+          },
+          "description": "Get all featured courses grouped by targetYear. Returns courses grouped by year with a list of available years."
+        },
+        {
           "name": "Browse Courses",
           "request": {
             "method": "GET",
@@ -2921,6 +3270,40 @@
           }
         },
         {
+          "name": "Get Exams by Course ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/mobile/student/exams/course/:courseID",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "mobile",
+                "student",
+                "exams",
+                "course",
+                ":courseID"
+              ],
+              "variable": [
+                {
+                  "key": "courseID",
+                  "value": "{{course_id}}",
+                  "description": "Course ID to get exams for"
+                }
+              ]
+            },
+            "description": "Get all exams for a specific course. Returns exam list with types and question counts."
+          }
+        },
+        {
           "name": "Get Exam Details",
           "request": {
             "method": "GET",
@@ -2971,13 +3354,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"question_id\",\n      \"answer\": \"answer_text\"\n    }\n  ]\n}",
+              "raw": "{\n  \"examID\": \"{{exam_id}}\",\n  \"type\": [\"essay\", \"multiple-choice\", \"true-false\"],\n  \"answers\": [\n    {\n      \"questionID\": \"question-id-1\",\n      \"answerBody\": \"A\"\n    },\n    {\n      \"questionID\": \"question-id-2\",\n      \"answerBody\": \"true\"\n    },\n    {\n      \"questionID\": \"question-id-3\",\n      \"answerBody\": \"This is my essay answer\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Submit exam answers. Supports multiple question types (MCQ, TRUE_FALSE, ESSAY). Returns detailed results with correct answers and scoring."
           }
         },
         {
@@ -3979,19 +4363,14 @@
                 "profile"
               ]
             }
-          }
+          },
+          "description": "Get user profile including gender field. Returns profile completion status for students."
         },
         {
           "name": "Update Profile",
           "request": {
             "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "multipart/form-data",
-                "type": "text"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{base_url}}/profile",
               "host": [
@@ -4000,7 +4379,113 @@
               "path": [
                 "profile"
               ]
-            }
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "nameAr",
+                  "value": "محمد أحمد",
+                  "type": "text"
+                },
+                {
+                  "key": "nameEn",
+                  "value": "Mohamed Ahmed",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+96512345678",
+                  "type": "text"
+                },
+                {
+                  "key": "year",
+                  "value": "3",
+                  "type": "text"
+                },
+                {
+                  "key": "semester",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "department",
+                  "value": "Law",
+                  "type": "text"
+                },
+                {
+                  "key": "gender",
+                  "value": "MALE",
+                  "type": "text",
+                  "description": "Optional: MALE or FEMALE"
+                },
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": [],
+                  "description": "Optional: Profile picture image file"
+                }
+              ]
+            },
+            "description": "Update user profile. Only allowed fields can be updated. Sensitive fields (id, email, role, status) are protected and cannot be updated."
+          }
+        },
+        {
+          "name": "Update Profile (Female Example)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "nameAr",
+                  "value": "نورا سعيد",
+                  "type": "text"
+                },
+                {
+                  "key": "nameEn",
+                  "value": "Nora Saeed",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+96512345679",
+                  "type": "text"
+                },
+                {
+                  "key": "year",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "semester",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "department",
+                  "value": "Law",
+                  "type": "text"
+                },
+                {
+                  "key": "gender",
+                  "value": "FEMALE",
+                  "type": "text",
+                  "description": "Optional: MALE or FEMALE"
+                }
+              ]
+            },
+            "description": "Example: Update profile with FEMALE gender."
           }
         },
         {
@@ -4026,13 +4511,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"currentPassword\": \"oldpassword\",\n  \"newPassword\": \"newpassword\",\n  \"confirmPassword\": \"newpassword\"\n}",
+              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": "Change user password. Requires current password for security."
           }
         },
         {
