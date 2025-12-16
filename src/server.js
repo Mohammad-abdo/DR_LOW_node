@@ -166,7 +166,8 @@ app.use("/health", healthRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes with specific rate limiters
-app.use("/api/auth", authLimiter, authRoutes);
+// Note: authLimiter removed from /api/auth to allow unlimited login attempts
+app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/mobile/student", studentMobileRoutes);
 app.use("/api/mobile/teacher", teacherMobileRoutes);
