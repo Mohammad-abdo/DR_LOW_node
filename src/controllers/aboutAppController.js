@@ -6,9 +6,28 @@ import prisma from '../config/database.js';
  */
 export const getAboutApp = async (req, res, next) => {
   try {
-    const aboutApp = await prisma.aboutApp.findFirst({
-      orderBy: { updatedAt: 'desc' },
-    });
+    // Check if aboutApp model exists
+    if (!prisma.aboutApp) {
+      return res.status(404).json({
+        success: false,
+        message: 'About app information not found',
+        messageAr: 'معلومات التطبيق غير موجودة',
+      });
+    }
+
+    let aboutApp = null;
+    
+    try {
+      aboutApp = await prisma.aboutApp.findFirst({
+        orderBy: { updatedAt: 'desc' },
+      });
+    } catch (dbError) {
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        aboutApp = null;
+      } else {
+        throw dbError;
+      }
+    }
 
     if (!aboutApp) {
       return res.status(404).json({
@@ -23,6 +42,7 @@ export const getAboutApp = async (req, res, next) => {
       data: { aboutApp },
     });
   } catch (error) {
+    console.error('Error in getAboutApp:', error);
     next(error);
   }
 };
@@ -33,6 +53,15 @@ export const getAboutApp = async (req, res, next) => {
  */
 export const createAboutApp = async (req, res, next) => {
   try {
+    // Check if aboutApp model exists
+    if (!prisma.aboutApp) {
+      return res.status(500).json({
+        success: false,
+        message: 'About app feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة معلومات التطبيق غير متاحة',
+      });
+    }
+
     const { appName, description, version, whatsappPhone1, whatsappPhone2 } = req.body;
 
     if (!appName || !version) {
@@ -70,6 +99,7 @@ export const createAboutApp = async (req, res, next) => {
       data: { aboutApp },
     });
   } catch (error) {
+    console.error('Error in aboutAppController:', error);
     next(error);
   }
 };
@@ -113,6 +143,7 @@ export const updateAboutApp = async (req, res, next) => {
       data: { aboutApp: updatedAboutApp },
     });
   } catch (error) {
+    console.error('Error in aboutAppController:', error);
     next(error);
   }
 };
@@ -123,15 +154,37 @@ export const updateAboutApp = async (req, res, next) => {
  */
 export const getAboutAppAdmin = async (req, res, next) => {
   try {
-    const aboutApp = await prisma.aboutApp.findFirst({
-      orderBy: { updatedAt: 'desc' },
-    });
+    // Check if aboutApp model exists
+    if (!prisma.aboutApp) {
+      console.warn('AboutApp model not found in Prisma client. Please run: npm run prisma:generate');
+      return res.json({
+        success: true,
+        data: { aboutApp: null },
+      });
+    }
+
+    let aboutApp = null;
+    
+    try {
+      aboutApp = await prisma.aboutApp.findFirst({
+        orderBy: { updatedAt: 'desc' },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, return null instead of error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('AboutApp table may not exist, returning null');
+        aboutApp = null;
+      } else {
+        throw dbError;
+      }
+    }
 
     res.json({
       success: true,
       data: { aboutApp },
     });
   } catch (error) {
+    console.error('Error in getAboutAppAdmin:', error);
     next(error);
   }
 };

@@ -7,13 +7,29 @@ import prisma from '../../config/database.js';
  */
 export const getAllPermissions = async (req, res, next) => {
   try {
+    // Check if permission model exists
+    if (!prisma.permission) {
+      console.warn('Permission model not found in Prisma client. Please run: npm run prisma:generate');
+      return res.json({
+        success: true,
+        data: {
+          permissions: [],
+          grouped: {},
+        },
+      });
+    }
+
     const { resource, action } = req.query;
 
     const where = {};
     if (resource) where.resource = resource;
     if (action) where.action = action;
 
-    const permissions = await prisma.permission.findMany({
+    let permissions = [];
+    let grouped = {};
+    
+    try {
+      permissions = await prisma.permission.findMany({
       where,
       include: {
         _count: {
@@ -28,14 +44,24 @@ export const getAllPermissions = async (req, res, next) => {
       ],
     });
 
-    // Group by resource
-    const grouped = permissions.reduce((acc, perm) => {
-      if (!acc[perm.resource]) {
-        acc[perm.resource] = [];
+      // Group by resource
+      grouped = permissions.reduce((acc, perm) => {
+        if (!acc[perm.resource]) {
+          acc[perm.resource] = [];
+        }
+        acc[perm.resource].push(perm);
+        return acc;
+      }, {});
+    } catch (dbError) {
+      // If table doesn't exist, return empty data instead of error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('Permission table may not exist, returning empty data');
+        permissions = [];
+        grouped = {};
+      } else {
+        throw dbError;
       }
-      acc[perm.resource].push(perm);
-      return acc;
-    }, {});
+    }
 
     res.json({
       success: true,
@@ -45,6 +71,7 @@ export const getAllPermissions = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('Error in getAllPermissions:', error);
     next(error);
   }
 };
@@ -55,6 +82,15 @@ export const getAllPermissions = async (req, res, next) => {
  */
 export const getPermissionById = async (req, res, next) => {
   try {
+    // Check if permission model exists
+    if (!prisma.permission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Permission feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة الصلاحيات غير متاحة',
+      });
+    }
+
     const { id } = req.params;
 
     const permission = await prisma.permission.findUnique({
@@ -88,6 +124,7 @@ export const getPermissionById = async (req, res, next) => {
       data: { permission },
     });
   } catch (error) {
+    console.error('Error in permissionController:', error);
     next(error);
   }
 };
@@ -139,6 +176,7 @@ export const createPermission = async (req, res, next) => {
       data: { permission },
     });
   } catch (error) {
+    console.error('Error in permissionController:', error);
     next(error);
   }
 };
@@ -182,6 +220,7 @@ export const updatePermission = async (req, res, next) => {
       data: { permission: updatedPermission },
     });
   } catch (error) {
+    console.error('Error in permissionController:', error);
     next(error);
   }
 };
@@ -216,6 +255,7 @@ export const deletePermission = async (req, res, next) => {
       messageAr: 'تم حذف الصلاحية بنجاح',
     });
   } catch (error) {
+    console.error('Error in permissionController:', error);
     next(error);
   }
 };
@@ -291,6 +331,7 @@ export const bulkCreatePermissions = async (req, res, next) => {
       data: results,
     });
   } catch (error) {
+    console.error('Error in permissionController:', error);
     next(error);
   }
 };

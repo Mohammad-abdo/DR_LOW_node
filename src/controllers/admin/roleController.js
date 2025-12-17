@@ -6,29 +6,51 @@ import prisma from '../../config/database.js';
  */
 export const getAllRoles = async (req, res, next) => {
   try {
-    const roles = await prisma.role.findMany({
-      include: {
-        permissions: {
-          include: {
-            permission: true,
+    // Check if role model exists
+    if (!prisma.role) {
+      console.warn('Role model not found in Prisma client. Please run: npm run prisma:generate');
+      return res.json({
+        success: true,
+        data: { roles: [] },
+      });
+    }
+
+    let roles = [];
+    
+    try {
+      roles = await prisma.role.findMany({
+        include: {
+          permissions: {
+            include: {
+              permission: true,
+            },
+          },
+          _count: {
+            select: {
+              userRoles: true,
+            },
           },
         },
-        _count: {
-          select: {
-            userRoles: true,
-          },
+        orderBy: {
+          createdAt: 'desc',
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+      });
+    } catch (dbError) {
+      // If table doesn't exist, return empty array instead of error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('Role table may not exist, returning empty data');
+        roles = [];
+      } else {
+        throw dbError;
+      }
+    }
 
     res.json({
       success: true,
       data: { roles },
     });
   } catch (error) {
+    console.error('Error in getAllRoles:', error);
     next(error);
   }
 };
@@ -39,6 +61,15 @@ export const getAllRoles = async (req, res, next) => {
  */
 export const getRoleById = async (req, res, next) => {
   try {
+    // Check if role model exists
+    if (!prisma.role) {
+      return res.status(404).json({
+        success: false,
+        message: 'Role feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة الأدوار غير متاحة',
+      });
+    }
+
     const { id } = req.params;
 
     const role = await prisma.role.findUnique({
@@ -77,6 +108,7 @@ export const getRoleById = async (req, res, next) => {
       data: { role },
     });
   } catch (error) {
+    console.error('Error in roleController:', error);
     next(error);
   }
 };
@@ -141,6 +173,7 @@ export const createRole = async (req, res, next) => {
       data: { role },
     });
   } catch (error) {
+    console.error('Error in roleController:', error);
     next(error);
   }
 };
@@ -240,6 +273,7 @@ export const updateRole = async (req, res, next) => {
       data: { role: updatedRole },
     });
   } catch (error) {
+    console.error('Error in roleController:', error);
     next(error);
   }
 };
@@ -282,6 +316,7 @@ export const deleteRole = async (req, res, next) => {
       messageAr: 'تم حذف الدور بنجاح',
     });
   } catch (error) {
+    console.error('Error in roleController:', error);
     next(error);
   }
 };
@@ -373,6 +408,7 @@ export const assignRoleToUser = async (req, res, next) => {
       data: { userRole },
     });
   } catch (error) {
+    console.error('Error in roleController:', error);
     next(error);
   }
 };
@@ -417,6 +453,7 @@ export const removeRoleFromUser = async (req, res, next) => {
       messageAr: 'تم إزالة الدور بنجاح',
     });
   } catch (error) {
+    console.error('Error in roleController:', error);
     next(error);
   }
 };
