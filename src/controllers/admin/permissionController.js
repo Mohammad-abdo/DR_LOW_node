@@ -135,6 +135,15 @@ export const getPermissionById = async (req, res, next) => {
  */
 export const createPermission = async (req, res, next) => {
   try {
+    // Check if permission model exists
+    if (!prisma.permission) {
+      return res.status(500).json({
+        success: false,
+        message: 'Permission feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة الصلاحيات غير متاحة',
+      });
+    }
+
     const { name, nameAr, nameEn, description, resource, action } = req.body;
 
     if (!name || !resource || !action) {
@@ -146,9 +155,20 @@ export const createPermission = async (req, res, next) => {
     }
 
     // Check if permission already exists
-    const existing = await prisma.permission.findUnique({
-      where: { name },
-    });
+    let existing = null;
+    try {
+      existing = await prisma.permission.findUnique({
+        where: { name },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, we can still try to create
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('Permission table may not exist, attempting to create');
+        existing = null;
+      } else {
+        throw dbError;
+      }
+    }
 
     if (existing) {
       return res.status(409).json({
@@ -158,16 +178,29 @@ export const createPermission = async (req, res, next) => {
       });
     }
 
-    const permission = await prisma.permission.create({
-      data: {
-        name,
-        nameAr,
-        nameEn,
-        description,
-        resource,
-        action,
-      },
-    });
+    let permission;
+    try {
+      permission = await prisma.permission.create({
+        data: {
+          name,
+          nameAr,
+          nameEn,
+          description,
+          resource,
+          action,
+        },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, return helpful error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'Permission table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول الصلاحيات غير موجود. يرجى تشغيل: npm run prisma:migrate',
+        });
+      }
+      throw dbError;
+    }
 
     res.status(201).json({
       success: true,
@@ -176,7 +209,7 @@ export const createPermission = async (req, res, next) => {
       data: { permission },
     });
   } catch (error) {
-    console.error('Error in permissionController:', error);
+    console.error('Error in createPermission:', error);
     next(error);
   }
 };

@@ -73,7 +73,19 @@ export const createAboutApp = async (req, res, next) => {
     }
 
     // Check if about app already exists
-    const existing = await prisma.aboutApp.findFirst();
+    let existing = null;
+    try {
+      existing = await prisma.aboutApp.findFirst();
+    } catch (dbError) {
+      // If table doesn't exist, we can still try to create
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('AboutApp table may not exist, attempting to create');
+        existing = null;
+      } else {
+        throw dbError;
+      }
+    }
+
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -82,15 +94,28 @@ export const createAboutApp = async (req, res, next) => {
       });
     }
 
-    const aboutApp = await prisma.aboutApp.create({
-      data: {
-        appName,
-        description,
-        version,
-        whatsappPhone1,
-        whatsappPhone2,
-      },
-    });
+    let aboutApp;
+    try {
+      aboutApp = await prisma.aboutApp.create({
+        data: {
+          appName,
+          description,
+          version,
+          whatsappPhone1,
+          whatsappPhone2,
+        },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, return helpful error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'AboutApp table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول معلومات التطبيق غير موجود. يرجى تشغيل: npm run prisma:migrate',
+        });
+      }
+      throw dbError;
+    }
 
     res.status(201).json({
       success: true,
@@ -110,12 +135,33 @@ export const createAboutApp = async (req, res, next) => {
  */
 export const updateAboutApp = async (req, res, next) => {
   try {
+    // Check if aboutApp model exists
+    if (!prisma.aboutApp) {
+      return res.status(500).json({
+        success: false,
+        message: 'About app feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة معلومات التطبيق غير متاحة',
+      });
+    }
+
     const { id } = req.params;
     const { appName, description, version, whatsappPhone1, whatsappPhone2 } = req.body;
 
-    const aboutApp = await prisma.aboutApp.findUnique({
-      where: { id },
-    });
+    let aboutApp;
+    try {
+      aboutApp = await prisma.aboutApp.findUnique({
+        where: { id },
+      });
+    } catch (dbError) {
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'AboutApp table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول معلومات التطبيق غير موجود',
+        });
+      }
+      throw dbError;
+    }
 
     if (!aboutApp) {
       return res.status(404).json({
@@ -125,16 +171,28 @@ export const updateAboutApp = async (req, res, next) => {
       });
     }
 
-    const updatedAboutApp = await prisma.aboutApp.update({
-      where: { id },
-      data: {
-        ...(appName && { appName }),
-        ...(description !== undefined && { description }),
-        ...(version && { version }),
-        ...(whatsappPhone1 !== undefined && { whatsappPhone1 }),
-        ...(whatsappPhone2 !== undefined && { whatsappPhone2 }),
-      },
-    });
+    let updatedAboutApp;
+    try {
+      updatedAboutApp = await prisma.aboutApp.update({
+        where: { id },
+        data: {
+          ...(appName && { appName }),
+          ...(description !== undefined && { description }),
+          ...(version && { version }),
+          ...(whatsappPhone1 !== undefined && { whatsappPhone1 }),
+          ...(whatsappPhone2 !== undefined && { whatsappPhone2 }),
+        },
+      });
+    } catch (dbError) {
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'AboutApp table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول معلومات التطبيق غير موجود',
+        });
+      }
+      throw dbError;
+    }
 
     res.json({
       success: true,

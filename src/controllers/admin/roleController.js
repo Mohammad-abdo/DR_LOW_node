@@ -119,6 +119,15 @@ export const getRoleById = async (req, res, next) => {
  */
 export const createRole = async (req, res, next) => {
   try {
+    // Check if role model exists
+    if (!prisma.role) {
+      return res.status(500).json({
+        success: false,
+        message: 'Role feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة الأدوار غير متاحة',
+      });
+    }
+
     const { name, nameAr, nameEn, description, permissionIds } = req.body;
 
     if (!name) {
@@ -130,9 +139,20 @@ export const createRole = async (req, res, next) => {
     }
 
     // Check if role name already exists
-    const existingRole = await prisma.role.findUnique({
-      where: { name },
-    });
+    let existingRole = null;
+    try {
+      existingRole = await prisma.role.findUnique({
+        where: { name },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, we can still try to create
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('Role table may not exist, attempting to create');
+        existingRole = null;
+      } else {
+        throw dbError;
+      }
+    }
 
     if (existingRole) {
       return res.status(409).json({
@@ -143,7 +163,9 @@ export const createRole = async (req, res, next) => {
     }
 
     // Create role with permissions
-    const role = await prisma.role.create({
+    let role;
+    try {
+      role = await prisma.role.create({
       data: {
         name,
         nameAr,
@@ -164,7 +186,18 @@ export const createRole = async (req, res, next) => {
           },
         },
       },
-    });
+      });
+    } catch (dbError) {
+      // If table doesn't exist, return helpful error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'Role table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول الأدوار غير موجود. يرجى تشغيل: npm run prisma:migrate',
+        });
+      }
+      throw dbError;
+    }
 
     res.status(201).json({
       success: true,
@@ -173,7 +206,7 @@ export const createRole = async (req, res, next) => {
       data: { role },
     });
   } catch (error) {
-    console.error('Error in roleController:', error);
+    console.error('Error in createRole:', error);
     next(error);
   }
 };

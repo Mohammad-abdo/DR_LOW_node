@@ -75,6 +75,15 @@ export const getAllHelpSupport = async (req, res, next) => {
  */
 export const createHelpSupport = async (req, res, next) => {
   try {
+    // Check if helpSupport model exists
+    if (!prisma.helpSupport) {
+      return res.status(500).json({
+        success: false,
+        message: 'Help & support feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة المساعدة والدعم غير متاحة',
+      });
+    }
+
     const { title, description, whatsappPhone1, whatsappPhone2 } = req.body;
 
     if (!title) {
@@ -85,14 +94,27 @@ export const createHelpSupport = async (req, res, next) => {
       });
     }
 
-    const helpSupport = await prisma.helpSupport.create({
-      data: {
-        title,
-        description,
-        whatsappPhone1,
-        whatsappPhone2,
-      },
-    });
+    let helpSupport;
+    try {
+      helpSupport = await prisma.helpSupport.create({
+        data: {
+          title,
+          description,
+          whatsappPhone1,
+          whatsappPhone2,
+        },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, return helpful error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'HelpSupport table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول المساعدة والدعم غير موجود. يرجى تشغيل: npm run prisma:migrate',
+        });
+      }
+      throw dbError;
+    }
 
     res.status(201).json({
       success: true,
@@ -112,12 +134,33 @@ export const createHelpSupport = async (req, res, next) => {
  */
 export const updateHelpSupport = async (req, res, next) => {
   try {
+    // Check if helpSupport model exists
+    if (!prisma.helpSupport) {
+      return res.status(500).json({
+        success: false,
+        message: 'Help & support feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة المساعدة والدعم غير متاحة',
+      });
+    }
+
     const { id } = req.params;
     const { title, description, whatsappPhone1, whatsappPhone2 } = req.body;
 
-    const helpSupport = await prisma.helpSupport.findUnique({
-      where: { id },
-    });
+    let helpSupport;
+    try {
+      helpSupport = await prisma.helpSupport.findUnique({
+        where: { id },
+      });
+    } catch (dbError) {
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'HelpSupport table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول المساعدة والدعم غير موجود',
+        });
+      }
+      throw dbError;
+    }
 
     if (!helpSupport) {
       return res.status(404).json({
@@ -127,15 +170,27 @@ export const updateHelpSupport = async (req, res, next) => {
       });
     }
 
-    const updatedHelpSupport = await prisma.helpSupport.update({
-      where: { id },
-      data: {
-        ...(title && { title }),
-        ...(description !== undefined && { description }),
-        ...(whatsappPhone1 !== undefined && { whatsappPhone1 }),
-        ...(whatsappPhone2 !== undefined && { whatsappPhone2 }),
-      },
-    });
+    let updatedHelpSupport;
+    try {
+      updatedHelpSupport = await prisma.helpSupport.update({
+        where: { id },
+        data: {
+          ...(title && { title }),
+          ...(description !== undefined && { description }),
+          ...(whatsappPhone1 !== undefined && { whatsappPhone1 }),
+          ...(whatsappPhone2 !== undefined && { whatsappPhone2 }),
+        },
+      });
+    } catch (dbError) {
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'HelpSupport table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول المساعدة والدعم غير موجود',
+        });
+      }
+      throw dbError;
+    }
 
     res.json({
       success: true,

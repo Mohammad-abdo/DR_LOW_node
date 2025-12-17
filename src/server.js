@@ -205,6 +205,29 @@ function getLocalIPAddress() {
     return "localhost";
 }
 
+// Ensure Prisma Client is ready before starting server
+import prisma from './config/database.js';
+import { getPrismaHealthStatus } from './utils/prismaHealthCheck.js';
+
+// Verify Prisma models are available
+const verifyPrismaModels = async () => {
+  try {
+    const health = getPrismaHealthStatus();
+    
+    if (!health.healthy) {
+      console.warn('⚠️  Some Prisma models are missing. Features may not work correctly.');
+      console.warn('⚠️  To fix: Run "npm run prisma:generate" on the server');
+    } else {
+      console.log('✅ All Prisma models are available');
+    }
+  } catch (error) {
+    console.error('❌ Error verifying Prisma models:', error.message);
+  }
+};
+
+// Verify models before starting server
+verifyPrismaModels();
+
 // Start server
 const HOST = "0.0.0.0"; // Listen on all network interfaces
 const localIP = getLocalIPAddress();

@@ -91,6 +91,15 @@ export const getAllAppPolicies = async (req, res, next) => {
  */
 export const createAppPolicy = async (req, res, next) => {
   try {
+    // Check if appPolicy model exists
+    if (!prisma.appPolicy) {
+      return res.status(500).json({
+        success: false,
+        message: 'App policy feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة سياسات التطبيق غير متاحة',
+      });
+    }
+
     const { type, content } = req.body;
 
     if (!type || !content) {
@@ -112,9 +121,20 @@ export const createAppPolicy = async (req, res, next) => {
     }
 
     // Check if policy type already exists
-    const existing = await prisma.appPolicy.findUnique({
-      where: { type },
-    });
+    let existing = null;
+    try {
+      existing = await prisma.appPolicy.findUnique({
+        where: { type },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, we can still try to create
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('AppPolicy table may not exist, attempting to create');
+        existing = null;
+      } else {
+        throw dbError;
+      }
+    }
 
     if (existing) {
       return res.status(400).json({
@@ -124,12 +144,25 @@ export const createAppPolicy = async (req, res, next) => {
       });
     }
 
-    const policy = await prisma.appPolicy.create({
-      data: {
-        type,
-        content,
-      },
-    });
+    let policy;
+    try {
+      policy = await prisma.appPolicy.create({
+        data: {
+          type,
+          content,
+        },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, return helpful error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'AppPolicy table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول سياسات التطبيق غير موجود. يرجى تشغيل: npm run prisma:migrate',
+        });
+      }
+      throw dbError;
+    }
 
     res.status(201).json({
       success: true,
@@ -149,6 +182,15 @@ export const createAppPolicy = async (req, res, next) => {
  */
 export const updateAppPolicy = async (req, res, next) => {
   try {
+    // Check if appPolicy model exists
+    if (!prisma.appPolicy) {
+      return res.status(500).json({
+        success: false,
+        message: 'App policy feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة سياسات التطبيق غير متاحة',
+      });
+    }
+
     const { id } = req.params;
     const { content } = req.body;
 
@@ -160,9 +202,21 @@ export const updateAppPolicy = async (req, res, next) => {
       });
     }
 
-    const policy = await prisma.appPolicy.findUnique({
-      where: { id },
-    });
+    let policy;
+    try {
+      policy = await prisma.appPolicy.findUnique({
+        where: { id },
+      });
+    } catch (dbError) {
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'AppPolicy table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول سياسات التطبيق غير موجود',
+        });
+      }
+      throw dbError;
+    }
 
     if (!policy) {
       return res.status(404).json({
@@ -172,10 +226,22 @@ export const updateAppPolicy = async (req, res, next) => {
       });
     }
 
-    const updatedPolicy = await prisma.appPolicy.update({
-      where: { id },
-      data: { content },
-    });
+    let updatedPolicy;
+    try {
+      updatedPolicy = await prisma.appPolicy.update({
+        where: { id },
+        data: { content },
+      });
+    } catch (dbError) {
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        return res.status(500).json({
+          success: false,
+          message: 'AppPolicy table does not exist. Please run: npm run prisma:migrate',
+          messageAr: 'جدول سياسات التطبيق غير موجود',
+        });
+      }
+      throw dbError;
+    }
 
     res.json({
       success: true,
