@@ -522,12 +522,12 @@ export const generateAllStudentsReport = async (req, res, next) => {
       include: {
         _count: {
           select: {
-            purchases: true,
+            enrollments: true,
             payments: true,
             progress: true,
           },
         },
-        purchases: {
+        enrollments: {
           include: {
             course: {
               select: {
@@ -550,7 +550,7 @@ export const generateAllStudentsReport = async (req, res, next) => {
 
     const reportData = students.map(student => {
       try {
-        const totalSpent = student.purchases.reduce((sum, p) => {
+        const totalSpent = (student.enrollments || []).reduce((sum, p) => {
           try {
             return sum + (p.payment?.amount ? parseFloat(p.payment.amount) || 0 : 0);
           } catch (e) {
@@ -566,7 +566,7 @@ export const generateAllStudentsReport = async (req, res, next) => {
           email: student.email || 'N/A',
           phone: student.phone || 'N/A',
           createdAt: student.createdAt,
-          totalEnrollments: student._count?.purchases || 0,
+          totalEnrollments: student._count?.enrollments || 0,
           totalPayments: student._count?.payments || 0,
           totalCoursesInProgress: student._count?.progress || 0,
           totalSpent: totalSpent || 0,

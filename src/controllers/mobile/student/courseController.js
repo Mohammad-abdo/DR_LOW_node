@@ -1,6 +1,7 @@
 import prisma from '../../../config/database.js';
 import { COURSE_STATUS } from '../../../config/constants.js';
 import { convertImageUrls } from '../../../utils/imageHelper.js';
+import { buildActiveCoursesWhere, filterExpiredCourses } from '../../../middlewares/courseExpiration.js';
 
 export const getAllCourses = async (req, res, next) => {
   try {
@@ -138,10 +139,8 @@ export const searchCourses = async (req, res, next) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Build where clause
-    const where = {
-      status: COURSE_STATUS.PUBLISHED,
-    };
+    // Build where clause (excludes expired courses)
+    const where = buildActiveCoursesWhere();
 
     // Search query - search in course title, description, teacher name, category name
     if (q) {

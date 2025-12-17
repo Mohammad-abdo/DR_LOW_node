@@ -25,27 +25,65 @@ function getLocalIPAddress() {
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   
-  // If already a full URL, return as is
+  // If already a full URL, return as is (but check if it's an IP address and convert it)
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    // If URL contains IP address, replace it with domain
+    const ipPattern = /https?:\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?/;
+    if (ipPattern.test(imagePath)) {
+      // Extract the path after IP
+      const urlMatch = imagePath.match(/https?:\/\/[^\/]+(\/.*)?$/);
+      const pathPart = urlMatch ? (urlMatch[1] || '/') : imagePath;
+      
+      // Get base URL with domain
+      let baseUrl;
+      if (process.env.API_BASE_URL) {
+        baseUrl = process.env.API_BASE_URL;
+      } else if (process.env.BACKEND_URL) {
+        baseUrl = process.env.BACKEND_URL;
+      } else {
+        baseUrl = 'https://dr-law.developteam.site';
+      }
+      baseUrl = baseUrl.replace(/\/+$/, '');
+      
+      return `${baseUrl}${pathPart}`;
+    }
     return imagePath;
   }
   
-  // Get base URL from environment or use local IP address
-  const PORT = process.env.PORT || 5005;
+  // Get base URL from environment or use domain name
   let baseUrl;
   
-  if (process.env.API_BASE_URL || process.env.BACKEND_URL) {
-    // Use explicit environment variable if set
-    baseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL;
-    // Remove trailing slash if present
-    baseUrl = baseUrl.replace(/\/$/, '');
+  // Priority: API_BASE_URL > BACKEND_URL > Default domain
+  if (process.env.API_BASE_URL) {
+    baseUrl = process.env.API_BASE_URL;
+    // If API_BASE_URL contains IP address, replace with domain
+    const urlWithoutProtocol = baseUrl.replace(/https?:\/\//, '');
+    if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(urlWithoutProtocol)) {
+      console.warn(`⚠️ API_BASE_URL contains IP address (${baseUrl}), using domain instead`);
+      baseUrl = 'https://dr-law.developteam.site';
+    }
+  } else if (process.env.BACKEND_URL) {
+    baseUrl = process.env.BACKEND_URL;
+    // If BACKEND_URL contains IP address, replace with domain
+    const urlWithoutProtocol = baseUrl.replace(/https?:\/\//, '');
+    if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(urlWithoutProtocol)) {
+      console.warn(`⚠️ BACKEND_URL contains IP address (${baseUrl}), using domain instead`);
+      baseUrl = 'https://dr-law.developteam.site';
+    }
   } else {
-    // Auto-detect local IP address for mobile access
-    const localIP = getLocalIPAddress();
-    baseUrl = `http://${localIP}:${PORT}`;
+    // Default to production domain (dr-law.developteam.site)
+    baseUrl = 'https://dr-law.developteam.site';
   }
   
-  // Clean the path - remove leading slash to avoid double slashes
+  // Log the base URL being used (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🔗 getImageUrl using baseUrl: ${baseUrl}`);
+  }
+  
+  // Remove trailing slash if present
+  baseUrl = baseUrl.replace(/\/+$/, '');
+  
+  // Clean the path - ensure it starts with /
   const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
   
   // Ensure the path doesn't have double slashes

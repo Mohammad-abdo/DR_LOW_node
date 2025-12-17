@@ -119,5 +119,30 @@ export const deleteNotification = async (req, res, next) => {
   }
 };
 
+/**
+ * Get unread notification count for admin
+ * GET /api/admin/notifications/unread-count
+ * GET /api/mobile/admin/notifications/unread-count
+ */
+export const getUnreadCount = async (req, res, next) => {
+  try {
+    const unreadCount = await prisma.notificationRecipient.count({
+      where: {
+        userId: req.user.id,
+        read: false,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        unreadCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 

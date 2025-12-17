@@ -64,3 +64,27 @@ export const shareApp = async (req, res, next) => {
   }
 };
 
+/**
+ * Get unread notification count for student (Mobile)
+ * GET /api/mobile/student/notifications/unread-count
+ */
+export const getUnreadCount = async (req, res, next) => {
+  try {
+    const unreadCount = await prisma.notificationRecipient.count({
+      where: {
+        userId: req.user.id,
+        read: false,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        unreadCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -26,6 +26,7 @@ enum CourseStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+  EXPIRED
 }
 
 enum CourseLevel {
@@ -101,6 +102,7 @@ model User {
   enrollments            Purchase[]
   cart                   Cart?
   wishlist               WishlistItem[]
+  courseRequests         CourseRequest[]         @relation("CourseRequests")
   examResults            ExamResult[]
   ratings                Rating[]
   teacherRatings         TeacherRating[]         @relation("TeacherRatings")
@@ -111,6 +113,7 @@ model User {
   quizResults            QuizResult[]
   sentNotifications      Notification[]          @relation("NotificationSender")
   notificationRecipients NotificationRecipient[] @relation("NotificationRecipient")
+  userRoles              UserRoleAssignment[]    @relation("UserRoles")
 
   @@map("users")
 }
@@ -154,17 +157,18 @@ model Course {
   updatedAt     DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  teacher       User            @relation("CourseTeacher", fields: [teacherId], references: [id])
-  category      Category        @relation(fields: [categoryId], references: [id])
-  chapters      Chapter[]
-  content       CourseContent[]
-  exams         Exam[]
-  purchases     Purchase[]
-  cartItems     CartItem[]
-  wishlistItems WishlistItem[]
-  ratings       Rating[]
-  progress      Progress[]
-  notifications Notification[]  @relation("CourseNotifications")
+  teacher        User            @relation("CourseTeacher", fields: [teacherId], references: [id])
+  category       Category        @relation(fields: [categoryId], references: [id])
+  chapters       Chapter[]
+  content        CourseContent[]
+  exams          Exam[]
+  purchases      Purchase[]
+  cartItems      CartItem[]
+  wishlistItems  WishlistItem[]
+  courseRequests CourseRequest[] @relation("CourseRequests")
+  ratings        Rating[]
+  progress       Progress[]
+  notifications  Notification[]  @relation("CourseNotifications")
 
   @@map("courses")
 }
@@ -432,6 +436,26 @@ model CartItem {
   @@map("cart_items")
 }
 
+// Course Request Model (Manual Course Activation)
+model CourseRequest {
+  id              String   @id @default(uuid())
+  studentId       String   @map("student_id")
+  courseId        String   @map("course_id")
+  status          String   @default("pending") // pending, approved, rejected
+  rejectionReason String?  @map("rejection_reason") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  student User   @relation("CourseRequests", fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation("CourseRequests", fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@index([status])
+  @@index([studentId])
+  @@index([courseId])
+  @@map("course_requests")
+}
+
 // Wishlist Model
 model WishlistItem {
   id        String   @id @default(uuid())
@@ -605,4 +629,109 @@ model TokenBlacklist {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("token_blacklist")
+}
+
+// About App Model
+model AboutApp {
+  id             String   @id @default(uuid())
+  appName        String   @map("app_name")
+  description    String?  @db.Text
+  version        String
+  whatsappPhone1 String?  @map("whatsapp_phone_1")
+  whatsappPhone2 String?  @map("whatsapp_phone_2")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("about_app")
+}
+
+// Help & Support Model
+model HelpSupport {
+  id             String   @id @default(uuid())
+  title          String
+  description    String?  @db.Text
+  whatsappPhone1 String?  @map("whatsapp_phone_1")
+  whatsappPhone2 String?  @map("whatsapp_phone_2")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("help_support")
+}
+
+// App Policies Model (Privacy Policy & Terms)
+model AppPolicy {
+  id        String   @id @default(uuid())
+  type      String // privacy_policy | terms_and_conditions
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([type])
+  @@map("app_policies")
+}
+
+// Role Model (Custom Roles)
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  nameAr      String?  @map("name_ar")
+  nameEn      String?  @map("name_en")
+  description String?  @db.Text
+  isSystem    Boolean  @default(false) @map("is_system") // System roles cannot be deleted
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  permissions RolePermission[]
+  userRoles   UserRoleAssignment[]
+
+  @@map("roles")
+}
+
+// Permission Model
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique // e.g., "courses.create", "users.delete"
+  nameAr      String?  @map("name_ar")
+  nameEn      String?  @map("name_en")
+  description String?  @db.Text
+  resource    String // e.g., "courses", "users", "exams"
+  action      String // e.g., "create", "read", "update", "delete"
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@index([resource])
+  @@index([action])
+  @@map("permissions")
+}
+
+// Role Permission (Many-to-Many)
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String   @map("role_id")
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// User Role Assignment (Many-to-Many: Users can have multiple custom roles)
+model UserRoleAssignment {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
 }

@@ -76,6 +76,7 @@ router.get('/reports/financial', reportController.generateFinancialReport);
 // Notifications
 import * as notificationController from '../../controllers/admin/notificationController.js';
 router.get('/notifications', notificationController.getAllNotifications);
+router.get('/notifications/unread-count', notificationController.getUnreadCount);
 router.post('/notifications', notificationController.createNotification);
 router.delete('/notifications/:id', notificationController.deleteNotification);
 
@@ -98,6 +99,13 @@ router.get('/courses/:courseId/chapters', chapterController.getChapters);
 router.post('/courses/:courseId/chapters', chapterController.createChapter);
 router.put('/courses/:courseId/chapters/:chapterId', chapterController.updateChapter);
 router.delete('/courses/:courseId/chapters/:chapterId', chapterController.deleteChapter);
+
+// Chunked Upload
+import { chunkedUpload } from '../../middlewares/chunkedUpload.js';
+import * as chunkedUploadController from '../../controllers/admin/chunkedUploadController.js';
+router.post('/upload/video-chunk', chunkedUpload.single('chunk'), chunkedUploadController.uploadChunk);
+router.get('/upload/video-chunk-status', chunkedUploadController.getChunkStatus);
+router.delete('/upload/cleanup-chunks', chunkedUploadController.cleanupChunks);
 
 // Course Content
 import * as courseContentController from '../../controllers/admin/courseContentController.js';
@@ -140,6 +148,52 @@ import * as progressController from '../../controllers/admin/progressController.
 router.get('/courses/:courseId/students/progress', progressController.getCourseStudentsProgress);
 router.get('/courses/:courseId/students/:studentId/progress', progressController.getStudentCourseProgress);
 router.get('/students/:studentId/progress', progressController.getStudentAllProgress);
+
+// Course Requests (Manual Course Activation)
+import * as courseRequestController from '../../controllers/admin/courseRequestController.js';
+router.get('/course-requests', courseRequestController.getAllCourseRequests);
+router.get('/course-requests/:id', courseRequestController.getCourseRequestById);
+router.post('/course-requests/:id/approve', courseRequestController.approveCourseRequest);
+router.post('/course-requests/:id/reject', courseRequestController.rejectCourseRequest);
+router.post('/course-requests/bulk-approve', courseRequestController.bulkApproveCourseRequests);
+
+// About App
+import * as aboutAppController from '../../controllers/aboutAppController.js';
+router.get('/about-app', aboutAppController.getAboutAppAdmin);
+router.post('/about-app', aboutAppController.createAboutApp);
+router.put('/about-app/:id', aboutAppController.updateAboutApp);
+
+// Help & Support
+import * as helpSupportController from '../../controllers/helpSupportController.js';
+router.get('/help-support', helpSupportController.getAllHelpSupport);
+router.post('/help-support', helpSupportController.createHelpSupport);
+router.put('/help-support/:id', helpSupportController.updateHelpSupport);
+router.delete('/help-support/:id', helpSupportController.deleteHelpSupport);
+
+// App Policies
+import * as appPolicyController from '../../controllers/appPolicyController.js';
+router.get('/policies', appPolicyController.getAllAppPolicies);
+router.post('/policies', appPolicyController.createAppPolicy);
+router.put('/policies/:id', appPolicyController.updateAppPolicy);
+router.delete('/policies/:id', appPolicyController.deleteAppPolicy);
+
+// Roles & Permissions
+import * as roleController from '../../controllers/admin/roleController.js';
+import * as permissionController from '../../controllers/admin/permissionController.js';
+router.get('/roles', roleController.getAllRoles);
+router.get('/roles/:id', roleController.getRoleById);
+router.post('/roles', roleController.createRole);
+router.put('/roles/:id', roleController.updateRole);
+router.delete('/roles/:id', roleController.deleteRole);
+router.post('/roles/:roleId/assign', roleController.assignRoleToUser);
+router.delete('/roles/:roleId/users/:userId', roleController.removeRoleFromUser);
+
+router.get('/permissions', permissionController.getAllPermissions);
+router.get('/permissions/:id', permissionController.getPermissionById);
+router.post('/permissions', permissionController.createPermission);
+router.post('/permissions/bulk-create', permissionController.bulkCreatePermissions);
+router.put('/permissions/:id', permissionController.updatePermission);
+router.delete('/permissions/:id', permissionController.deletePermission);
 
 export default router;
 

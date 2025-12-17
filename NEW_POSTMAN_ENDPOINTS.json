@@ -1,0 +1,539 @@
+[
+  {
+    "name": "Course Requests",
+    "item": [
+      {
+        "name": "Get All Course Requests",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/admin/course-requests?status=pending",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "course-requests"],
+            "query": [
+              {
+                "key": "status",
+                "value": "pending",
+                "description": "pending|approved|rejected"
+              },
+              {
+                "key": "studentId",
+                "value": "",
+                "description": "Filter by student ID",
+                "disabled": true
+              },
+              {
+                "key": "courseId",
+                "value": "",
+                "description": "Filter by course ID",
+                "disabled": true
+              }
+            ]
+          },
+          "description": "Get all course requests with optional filters"
+        }
+      },
+      {
+        "name": "Get Course Request By ID",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/admin/course-requests/:id",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "course-requests", ":id"],
+            "variable": [
+              {
+                "key": "id",
+                "value": "",
+                "description": "Course request ID"
+              }
+            ]
+          },
+          "description": "Get single course request by ID"
+        }
+      },
+      {
+        "name": "Approve Course Request",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/admin/course-requests/:id/approve",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "course-requests", ":id", "approve"],
+            "variable": [
+              {
+                "key": "id",
+                "value": "",
+                "description": "Course request ID"
+              }
+            ]
+          },
+          "description": "Approve course request and automatically enroll student"
+        }
+      },
+      {
+        "name": "Reject Course Request",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"rejectionReason\": \"Optional reason for rejection\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{base_url}}/admin/course-requests/:id/reject",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "course-requests", ":id", "reject"],
+            "variable": [
+              {
+                "key": "id",
+                "value": "",
+                "description": "Course request ID"
+              }
+            ]
+          },
+          "description": "Reject course request with optional reason"
+        }
+      },
+      {
+        "name": "Bulk Approve Course Requests",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"requestIds\": [\"request-id-1\", \"request-id-2\", \"request-id-3\"]\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{base_url}}/admin/course-requests/bulk-approve",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "course-requests", "bulk-approve"]
+          },
+          "description": "Approve multiple course requests at once"
+        }
+      }
+    ]
+  },
+  {
+    "name": "About App",
+    "item": [
+      {
+        "name": "Get About App (Public)",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/app/about",
+            "host": ["{{base_url}}"],
+            "path": ["app", "about"]
+          },
+          "description": "Get about app information (public endpoint)"
+        }
+      },
+      {
+        "name": "Admin: Get About App",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/admin/about-app",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "about-app"]
+          },
+          "description": "Admin: Get about app information for editing"
+        }
+      },
+      {
+        "name": "Admin: Create About App",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"appName\": \"Dr. Law LMS\",\n  \"description\": \"Learning Management System\",\n  \"version\": \"1.0.0\",\n  \"whatsappPhone1\": \"+96512345678\",\n  \"whatsappPhone2\": \"+96587654321\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{base_url}}/admin/about-app",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "about-app"]
+          },
+          "description": "Admin: Create about app information"
+        }
+      },
+      {
+        "name": "Admin: Update About App",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"appName\": \"Updated Name\",\n  \"description\": \"Updated description\",\n  \"version\": \"1.1.0\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{base_url}}/admin/about-app/:id",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "about-app", ":id"],
+            "variable": [
+              {
+                "key": "id",
+                "value": "",
+                "description": "About app ID"
+              }
+            ]
+          },
+          "description": "Admin: Update about app information"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Help & Support",
+    "item": [
+      {
+        "name": "Get Help & Support (Public)",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/app/help-support",
+            "host": ["{{base_url}}"],
+            "path": ["app", "help-support"]
+          },
+          "description": "Get help & support information (public endpoint)"
+        }
+      },
+      {
+        "name": "Admin: Get All Help & Support",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/admin/help-support",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "help-support"]
+          },
+          "description": "Admin: Get all help & support entries"
+        }
+      },
+      {
+        "name": "Admin: Create Help & Support",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"title\": \"Need Help?\",\n  \"description\": \"Contact us via WhatsApp\",\n  \"whatsappPhone1\": \"+96512345678\",\n  \"whatsappPhone2\": \"+96587654321\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{base_url}}/admin/help-support",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "help-support"]
+          },
+          "description": "Admin: Create help & support entry"
+        }
+      },
+      {
+        "name": "Admin: Update Help & Support",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"title\": \"Updated Title\",\n  \"description\": \"Updated description\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{base_url}}/admin/help-support/:id",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "help-support", ":id"],
+            "variable": [
+              {
+                "key": "id",
+                "value": "",
+                "description": "Help & support ID"
+              }
+            ]
+          },
+          "description": "Admin: Update help & support entry"
+        }
+      },
+      {
+        "name": "Admin: Delete Help & Support",
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/admin/help-support/:id",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "help-support", ":id"],
+            "variable": [
+              {
+                "key": "id",
+                "value": "",
+                "description": "Help & support ID"
+              }
+            ]
+          },
+          "description": "Admin: Delete help & support entry"
+        }
+      }
+    ]
+  },
+  {
+    "name": "App Policies",
+    "item": [
+      {
+        "name": "Get App Policies (Public)",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/app/policies?type=privacy_policy",
+            "host": ["{{base_url}}"],
+            "path": ["app", "policies"],
+            "query": [
+              {
+                "key": "type",
+                "value": "privacy_policy",
+                "description": "privacy_policy|terms_and_conditions",
+                "disabled": true
+              }
+            ]
+          },
+          "description": "Get app policies (public endpoint)"
+        }
+      },
+      {
+        "name": "Admin: Get All Policies",
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/admin/policies",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "policies"]
+          },
+          "description": "Admin: Get all app policies"
+        }
+      },
+      {
+        "name": "Admin: Create Policy",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"type\": \"privacy_policy\",\n  \"content\": \"Privacy policy content here...\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{base_url}}/admin/policies",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "policies"]
+          },
+          "description": "Admin: Create app policy"
+        }
+      },
+      {
+        "name": "Admin: Update Policy",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"content\": \"Updated policy content...\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "{{base_url}}/admin/policies/:id",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "policies", ":id"],
+            "variable": [
+              {
+                "key": "id",
+                "value": "",
+                "description": "Policy ID"
+              }
+            ]
+          },
+          "description": "Admin: Update app policy"
+        }
+      },
+      {
+        "name": "Admin: Delete Policy",
+        "request": {
+          "method": "DELETE",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "{{base_url}}/admin/policies/:id",
+            "host": ["{{base_url}}"],
+            "path": ["admin", "policies", ":id"],
+            "variable": [
+              {
+                "key": "id",
+                "value": "",
+                "description": "Policy ID"
+              }
+            ]
+          },
+          "description": "Admin: Delete app policy"
+        }
+      }
+    ]
+  }
+]
+

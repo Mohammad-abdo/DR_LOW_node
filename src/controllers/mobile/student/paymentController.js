@@ -2,7 +2,33 @@ import prisma from '../../../config/database.js';
 import { PAYMENT_STATUS, PAYMENT_METHOD } from '../../../config/constants.js';
 import { notifyPurchase } from '../../../services/notificationService.js';
 
+/**
+ * ⚠️ PAYMENT SYSTEM DISABLED ⚠️
+ * 
+ * Online payment functionality has been disabled.
+ * The system now uses manual course activation through course requests.
+ * 
+ * Students should:
+ * 1. Add courses to cart
+ * 2. Submit cart as course requests (POST /api/mobile/student/cart/submit)
+ * 3. Wait for admin approval
+ * 
+ * Admin can approve/reject requests via:
+ * - POST /api/admin/course-requests/:id/approve
+ * - POST /api/admin/course-requests/:id/reject
+ */
+
+// DISABLED: Payment endpoint - Use course requests instead
 export const createPayment = async (req, res, next) => {
+  return res.status(410).json({
+    success: false,
+    message: 'Online payment is disabled. Please use course requests instead.',
+    messageAr: 'الدفع الإلكتروني معطل. يرجى استخدام طلبات الدورات بدلاً من ذلك.',
+    info: {
+      alternative: 'POST /api/mobile/student/cart/submit',
+      description: 'Submit your cart as course requests and wait for admin approval',
+    },
+  });
   try {
     const { courseIds, paymentMethod, transactionId, metadata } = req.body;
 

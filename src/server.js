@@ -15,6 +15,7 @@ import adminRoutes from "./routes/admin/index.js";
 import studentMobileRoutes from "./routes/mobile/student/index.js";
 import teacherMobileRoutes from "./routes/mobile/teacher/index.js";
 import adminMobileRoutes from "./routes/mobile/admin/index.js";
+import publicMobileRoutes from "./routes/mobile/public/index.js";
 import webRoutes from "./routes/web/index.js";
 import authRoutes from "./routes/auth.js";
 import profileRoutes from "./routes/profile.js";
@@ -165,10 +166,20 @@ app.use("/health", healthRoutes);
 // API Documentation
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Public app routes (before auth middleware)
+import appRoutes from "./routes/app.js";
+app.use("/api/app", appRoutes);
+
 // Routes with specific rate limiters
 // Note: authLimiter removed from /api/auth to allow unlimited login attempts
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+
+// Mobile routes
+// Public mobile routes (no authentication required)
+app.use("/api/mobile/public", publicMobileRoutes);
+
+// Authenticated mobile routes
 app.use("/api/mobile/student", studentMobileRoutes);
 app.use("/api/mobile/teacher", teacherMobileRoutes);
 app.use("/api/mobile/admin", adminMobileRoutes);
@@ -206,6 +217,15 @@ app.listen(PORT, HOST, () => {
     console.log(
         `\n💡 Share this IP with others on your WiFi: ${localIP}:${PORT}`
     );
+    
+    // Start scheduled jobs
+    if (process.env.NODE_ENV !== 'test') {
+        import('./jobs/courseExpirationJob.js').then(({ startCourseExpirationJob }) => {
+            startCourseExpirationJob();
+        }).catch(err => {
+            console.error('Error starting scheduled jobs:', err);
+        });
+    }
 });
 
 export default app;

@@ -1,0 +1,1527 @@
+{
+  "info": {
+    "name": "LMS Mobile Student API",
+    "description": "Complete collection of all mobile student endpoints with examples",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "mobile-student-api-2024",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://dr-law.developteam.site/api/mobile/student",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"logoutAllDevices\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout student from mobile app. Set `logoutAllDevices: true` to logout from all devices."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"logoutAllDevices\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/logout",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "logout"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logged out successfully\",\n  \"messageAr\": \"تم تسجيل الخروج بنجاح\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Home",
+      "item": [
+        {
+          "name": "Get Home Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/home",
+              "host": ["{{base_url}}"],
+              "path": ["home"]
+            },
+            "description": "Get home page data including featured courses, basic courses, categories, and banners."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/home",
+                  "host": ["{{base_url}}"],
+                  "path": ["home"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"featuredCourses\": [],\n    \"basicCourses\": [],\n    \"categories\": [],\n    \"banners\": []\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Courses by Category",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/:categoryId/courses?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["categories", ":categoryId", "courses"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get courses by category ID with pagination."
+          }
+        },
+        {
+          "name": "Get Featured Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/courses/featured",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "featured"]
+            },
+            "description": "Get all featured courses."
+          }
+        },
+        {
+          "name": "Get Basic Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/courses/basic",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "basic"]
+            },
+            "description": "Get all basic courses."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "Get All Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/courses?page=1&limit=10&categoryId=&level=&search=",
+              "host": ["{{base_url}}"],
+              "path": ["courses"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "Filter by category ID"
+                },
+                {
+                  "key": "level",
+                  "value": "",
+                  "description": "Filter by level (BEGINNER, INTERMEDIATE, ADVANCED)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search query"
+                }
+              ]
+            },
+            "description": "Get all published courses with pagination and filters."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/courses?page=1&limit=10",
+                  "host": ["{{base_url}}"],
+                  "path": ["courses"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"courses\": [\n      {\n        \"id\": \"course-id\",\n        \"titleAr\": \"عنوان الدورة\",\n        \"titleEn\": \"Course Title\",\n        \"descriptionAr\": \"وصف الدورة\",\n        \"descriptionEn\": \"Course Description\",\n        \"price\": 100.00,\n        \"finalPrice\": 80.00,\n        \"coverImage\": \"https://dr-law.developteam.site/uploads/covers/image.jpg\",\n        \"level\": \"BEGINNER\",\n        \"isBasic\": false,\n        \"isFeatured\": true,\n        \"teacher\": {\n          \"id\": \"teacher-id\",\n          \"nameAr\": \"اسم المعلم\",\n          \"nameEn\": \"Teacher Name\",\n          \"avatar\": \"https://dr-law.developteam.site/uploads/avatars/avatar.jpg\"\n        },\n        \"category\": {\n          \"id\": \"category-id\",\n          \"nameAr\": \"اسم الفئة\",\n          \"nameEn\": \"Category Name\"\n        },\n        \"isPurchased\": false,\n        \"averageRating\": 4.5,\n        \"ratingCount\": 10\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 10,\n      \"total\": 50,\n      \"pages\": 5\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Course by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/courses/:id",
+              "host": ["{{base_url}}"],
+              "path": ["courses", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "course-id-here",
+                  "description": "Course ID"
+                }
+              ]
+            },
+            "description": "Get detailed course information by ID."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/courses/course-id-here",
+                  "host": ["{{base_url}}"],
+                  "path": ["courses", "course-id-here"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"id\": \"course-id\",\n      \"titleAr\": \"عنوان الدورة\",\n      \"titleEn\": \"Course Title\",\n      \"descriptionAr\": \"وصف الدورة\",\n      \"descriptionEn\": \"Course Description\",\n      \"price\": 100.00,\n      \"finalPrice\": 80.00,\n      \"coverImage\": \"https://dr-law.developteam.site/uploads/covers/image.jpg\",\n      \"level\": \"BEGINNER\",\n      \"isBasic\": false,\n      \"isFeatured\": true,\n      \"teacher\": {\n        \"id\": \"teacher-id\",\n        \"nameAr\": \"اسم المعلم\",\n        \"nameEn\": \"Teacher Name\",\n        \"avatar\": \"https://dr-law.developteam.site/uploads/avatars/avatar.jpg\"\n      },\n      \"category\": {\n        \"id\": \"category-id\",\n        \"nameAr\": \"اسم الفئة\",\n        \"nameEn\": \"Category Name\"\n      },\n      \"isPurchased\": false,\n      \"averageRating\": 4.5,\n      \"ratingCount\": 10,\n      \"_count\": {\n        \"purchases\": 50,\n        \"ratings\": 10,\n        \"content\": 20\n      }\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Search Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/search?q=law&categoryId=&level=BEGINNER&isBasic=false&isFeatured=true&minPrice=0&maxPrice=1000&minRating=4&sortBy=newest&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "law",
+                  "description": "Search query"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "Filter by category ID"
+                },
+                {
+                  "key": "level",
+                  "value": "BEGINNER",
+                  "description": "Filter by level"
+                },
+                {
+                  "key": "isBasic",
+                  "value": "false",
+                  "description": "Filter basic courses"
+                },
+                {
+                  "key": "isFeatured",
+                  "value": "true",
+                  "description": "Filter featured courses"
+                },
+                {
+                  "key": "minPrice",
+                  "value": "0",
+                  "description": "Minimum price"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "1000",
+                  "description": "Maximum price"
+                },
+                {
+                  "key": "minRating",
+                  "value": "4",
+                  "description": "Minimum rating"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "newest",
+                  "description": "Sort by: popular, newest, price_asc, price_desc, rating"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Advanced search for courses with multiple filters."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart (Course Requests)",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart",
+              "host": ["{{base_url}}"],
+              "path": ["cart"]
+            },
+            "description": "Get student's cart items."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/cart",
+                  "host": ["{{base_url}}"],
+                  "path": ["cart"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"cart\": {\n      \"id\": \"cart-id\",\n      \"items\": [\n        {\n          \"id\": \"item-id\",\n          \"courseId\": \"course-id\",\n          \"course\": {\n            \"id\": \"course-id\",\n            \"titleEn\": \"Course Title\",\n            \"titleAr\": \"عنوان الدورة\",\n            \"finalPrice\": 80.00,\n            \"coverImage\": \"https://dr-law.developteam.site/uploads/covers/image.jpg\"\n          }\n        }\n      ],\n      \"total\": 80.00\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Add to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": \"course-id-here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/cart",
+              "host": ["{{base_url}}"],
+              "path": ["cart"]
+            },
+            "description": "Add a course to cart (creates a course request)."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"courseId\": \"course-id-here\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/cart",
+                  "host": ["{{base_url}}"],
+                  "path": ["cart"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Course added to cart successfully\",\n  \"messageAr\": \"تمت إضافة الدورة إلى السلة بنجاح\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart/submit",
+              "host": ["{{base_url}}"],
+              "path": ["cart", "submit"]
+            },
+            "description": "Submit cart items as course requests (pending admin approval)."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/cart/submit",
+                  "host": ["{{base_url}}"],
+                  "path": ["cart", "submit"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Course requests submitted successfully. Awaiting admin approval.\",\n  \"messageAr\": \"تم إرسال طلبات الدورات بنجاح. بانتظار موافقة المسؤول.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Remove from Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart/:courseId",
+              "host": ["{{base_url}}"],
+              "path": ["cart", ":courseId"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course-id-here"
+                }
+              ]
+            },
+            "description": "Remove a course from cart."
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart",
+              "host": ["{{base_url}}"],
+              "path": ["cart"]
+            },
+            "description": "Clear all items from cart."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist",
+      "item": [
+        {
+          "name": "Get Wishlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/wishlist",
+              "host": ["{{base_url}}"],
+              "path": ["wishlist"]
+            },
+            "description": "Get student's wishlist."
+          }
+        },
+        {
+          "name": "Add to Wishlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": \"course-id-here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/wishlist",
+              "host": ["{{base_url}}"],
+              "path": ["wishlist"]
+            },
+            "description": "Add a course to wishlist."
+          }
+        },
+        {
+          "name": "Remove from Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/wishlist/:courseId",
+              "host": ["{{base_url}}"],
+              "path": ["wishlist", ":courseId"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course-id-here"
+                }
+              ]
+            },
+            "description": "Remove a course from wishlist."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Learning",
+      "item": [
+        {
+          "name": "Get My Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my-courses",
+              "host": ["{{base_url}}"],
+              "path": ["my-courses"]
+            },
+            "description": "Get all courses the student has enrolled in (approved course requests)."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/my-courses",
+                  "host": ["{{base_url}}"],
+                  "path": ["my-courses"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"courses\": [\n      {\n        \"id\": \"course-id\",\n        \"titleEn\": \"Course Title\",\n        \"titleAr\": \"عنوان الدورة\",\n        \"coverImage\": \"https://dr-law.developteam.site/uploads/covers/image.jpg\",\n        \"status\": \"in_progress\",\n        \"progress\": 45.5,\n        \"teacher\": {\n          \"nameEn\": \"Teacher Name\",\n          \"nameAr\": \"اسم المعلم\"\n        }\n      }\n    ],\n    \"categorized\": {\n      \"notStarted\": [],\n      \"inProgress\": [],\n      \"completed\": []\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Course Content",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/courses/:courseId/content",
+              "host": ["{{base_url}}"],
+              "path": ["courses", ":courseId", "content"],
+              "variable": [
+                {
+                  "key": "courseId",
+                  "value": "course-id-here"
+                }
+              ]
+            },
+            "description": "Get course content including videos, chapters, and exams. Only accessible if course is purchased/approved."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/courses/course-id-here/content",
+                  "host": ["{{base_url}}"],
+                  "path": ["courses", "course-id-here", "content"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"id\": \"course-id\",\n      \"titleEn\": \"Course Title\",\n      \"content\": [\n        {\n          \"id\": \"content-id\",\n          \"type\": \"video\",\n          \"titleEn\": \"Video Title\",\n          \"videoUrl\": \"https://dr-law.developteam.site/uploads/videos/video.mp4\",\n          \"duration\": 30,\n          \"progress\": 0,\n          \"completed\": false\n        }\n      ],\n      \"chapters\": []\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mark Content Complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": \"course-id-here\",\n  \"contentId\": \"content-id-here\",\n  \"progress\": 100,\n  \"completed\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/progress",
+              "host": ["{{base_url}}"],
+              "path": ["progress"]
+            },
+            "description": "Mark course content as complete and update progress."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Video Streaming (Secure)",
+      "item": [
+        {
+          "name": "Get Video Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/video/token/:contentId",
+              "host": ["{{base_url}}"],
+              "path": ["video", "token", ":contentId"],
+              "variable": [
+                {
+                  "key": "contentId",
+                  "value": "content-id-here"
+                }
+              ]
+            },
+            "description": "Get secure token for video streaming. Token expires in 1 hour."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/video/token/content-id-here",
+                  "host": ["{{base_url}}"],
+                  "path": ["video", "token", "content-id-here"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"expiresIn\": 3600,\n    \"streamUrl\": \"/api/mobile/student/video/stream/content-id-here?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Stream Video",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/video/stream/:contentId?token=video-token-here",
+              "host": ["{{base_url}}"],
+              "path": ["video", "stream", ":contentId"],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "video-token-here",
+                  "description": "Video streaming token from /video/token endpoint"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "contentId",
+                  "value": "content-id-here"
+                }
+              ]
+            },
+            "description": "Stream video securely using token. Supports range requests for video streaming."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exams",
+      "item": [
+        {
+          "name": "Get My Exams",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exams",
+              "host": ["{{base_url}}"],
+              "path": ["exams"]
+            },
+            "description": "Get all exams for enrolled courses."
+          }
+        },
+        {
+          "name": "Get Exams by Course",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exams/course/:courseID",
+              "host": ["{{base_url}}"],
+              "path": ["exams", "course", ":courseID"],
+              "variable": [
+                {
+                  "key": "courseID",
+                  "value": "course-id-here"
+                }
+              ]
+            },
+            "description": "Get all exams for a specific course."
+          }
+        },
+        {
+          "name": "Get Exam by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exams/:id",
+              "host": ["{{base_url}}"],
+              "path": ["exams", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "exam-id-here"
+                }
+              ]
+            },
+            "description": "Get detailed exam information with questions and options."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/exams/exam-id-here",
+                  "host": ["{{base_url}}"],
+                  "path": ["exams", "exam-id-here"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"exam\": {\n      \"examID\": \"exam-id\",\n      \"title\": \"Exam Title\",\n      \"titleAr\": \"عنوان الامتحان\",\n      \"titleEn\": \"Exam Title\",\n      \"description\": \"Exam Description\",\n      \"types\": [\"multiple-choice\", \"true-false\"],\n      \"questionsCount\": 10,\n      \"duration\": 60,\n      \"passingScore\": 60,\n      \"startDate\": \"2024-01-01T00:00:00Z\",\n      \"endDate\": \"2024-12-31T23:59:59Z\",\n      \"course\": {\n        \"id\": \"course-id\",\n        \"titleAr\": \"عنوان الدورة\",\n        \"titleEn\": \"Course Title\"\n      },\n      \"questions\": [\n        {\n          \"questionID\": \"question-id\",\n          \"type\": \"multiple-choice\",\n          \"questionAr\": \"السؤال بالعربية\",\n          \"questionEn\": \"Question in English\",\n          \"options\": [\n            {\"textAr\": \"الخيار 1\", \"textEn\": \"Option 1\"},\n            {\"textAr\": \"الخيار 2\", \"textEn\": \"Option 2\"}\n          ],\n          \"points\": 10,\n          \"order\": 1\n        }\n      ]\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Submit Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"question-id-1\",\n      \"answer\": \"Option 1\"\n    },\n    {\n      \"questionId\": \"question-id-2\",\n      \"answer\": \"true\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/exams/:examId/submit",
+              "host": ["{{base_url}}"],
+              "path": ["exams", ":examId", "submit"],
+              "variable": [
+                {
+                  "key": "examId",
+                  "value": "exam-id-here"
+                }
+              ]
+            },
+            "description": "Submit exam answers and get results."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"question-id-1\",\n      \"answer\": \"Option 1\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/exams/exam-id-here/submit",
+                  "host": ["{{base_url}}"],
+                  "path": ["exams", "exam-id-here", "submit"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"result\": {\n      \"id\": \"result-id\",\n      \"score\": 80,\n      \"totalScore\": 100,\n      \"percentage\": 80,\n      \"passed\": true,\n      \"submittedAt\": \"2024-01-01T12:00:00Z\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Exam Result",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exams/:id/result",
+              "host": ["{{base_url}}"],
+              "path": ["exams", ":id", "result"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "exam-id-here"
+                }
+              ]
+            },
+            "description": "Get exam result if already submitted."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ratings",
+      "item": [
+        {
+          "name": "Rate Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": \"course-id-here\",\n  \"rating\": 5,\n  \"commentAr\": \"تعليق بالعربية\",\n  \"commentEn\": \"Comment in English\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/ratings/course",
+              "host": ["{{base_url}}"],
+              "path": ["ratings", "course"]
+            },
+            "description": "Rate a course (1-5 stars) with optional comment."
+          }
+        },
+        {
+          "name": "Rate Teacher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teacherId\": \"teacher-id-here\",\n  \"rating\": 5,\n  \"commentAr\": \"تعليق بالعربية\",\n  \"commentEn\": \"Comment in English\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/ratings/teacher",
+              "host": ["{{base_url}}"],
+              "path": ["ratings", "teacher"]
+            },
+            "description": "Rate a teacher (1-5 stars) with optional comment."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quizzes",
+      "item": [
+        {
+          "name": "Get Quiz by Content",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/content/:contentId/quiz",
+              "host": ["{{base_url}}"],
+              "path": ["content", ":contentId", "quiz"],
+              "variable": [
+                {
+                  "key": "contentId",
+                  "value": "content-id-here"
+                }
+              ]
+            },
+            "description": "Get quiz for a specific content item."
+          }
+        },
+        {
+          "name": "Submit Quiz",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"question-id-1\",\n      \"answer\": \"Option 1\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/content/:contentId/quiz/submit",
+              "host": ["{{base_url}}"],
+              "path": ["content", ":contentId", "quiz", "submit"],
+              "variable": [
+                {
+                  "key": "contentId",
+                  "value": "content-id-here"
+                }
+              ]
+            },
+            "description": "Submit quiz answers."
+          }
+        },
+        {
+          "name": "Get Quiz Result",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/content/:contentId/quiz/result",
+              "host": ["{{base_url}}"],
+              "path": ["content", ":contentId", "quiz", "result"],
+              "variable": [
+                {
+                  "key": "contentId",
+                  "value": "content-id-here"
+                }
+              ]
+            },
+            "description": "Get quiz result if already submitted."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"user-password-here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Delete student account. Requires password confirmation."
+          }
+        },
+        {
+          "name": "Share App / Invite Friend",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/share",
+              "host": ["{{base_url}}"],
+              "path": ["share"]
+            },
+            "description": "Get app sharing information for inviting friends."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/share",
+                  "host": ["{{base_url}}"],
+                  "path": ["share"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"https://lms.edu.kw\",\n    \"titleAr\": \"انضم إلى منصة التعلم الإلكتروني\",\n    \"titleEn\": \"Join our Learning Management System\",\n    \"messageAr\": \"انضم إلى منصة التعلم الإلكتروني وابدأ رحلتك التعليمية اليوم!\",\n    \"messageEn\": \"Join our Learning Management System and start your learning journey today!\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Unread Notifications Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/unread-count",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "unread-count"]
+            },
+            "description": "Get count of unread notifications for the student."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/notifications/unread-count",
+                  "host": ["{{base_url}}"],
+                  "path": ["notifications", "unread-count"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"unreadCount\": 5\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "App Information",
+      "item": [
+        {
+          "name": "Get About App",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/about",
+              "host": ["{{base_url}}"],
+              "path": ["about"]
+            },
+            "description": "Get about app information."
+          }
+        },
+        {
+          "name": "Get Help & Support",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/help-support",
+              "host": ["{{base_url}}"],
+              "path": ["help-support"]
+            },
+            "description": "Get help and support information."
+          }
+        },
+        {
+          "name": "Get Privacy Policy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/privacy-policy",
+              "host": ["{{base_url}}"],
+              "path": ["privacy-policy"]
+            },
+            "description": "Get privacy policy."
+          }
+        },
+        {
+          "name": "Get Terms & Conditions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/terms",
+              "host": ["{{base_url}}"],
+              "path": ["terms"]
+            },
+            "description": "Get terms and conditions."
+          }
+        },
+        {
+          "name": "Get All Policies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/policies",
+              "host": ["{{base_url}}"],
+              "path": ["policies"]
+            },
+            "description": "Get all app policies (privacy policy and terms)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Support",
+      "item": [
+        {
+          "name": "Get Help Content",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/help",
+              "host": ["{{base_url}}"],
+              "path": ["help"]
+            },
+            "description": "Get help content."
+          }
+        },
+        {
+          "name": "Create Support Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Support Request\",\n  \"message\": \"I need help with...\",\n  \"priority\": \"medium\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/support/tickets",
+              "host": ["{{base_url}}"],
+              "path": ["support", "tickets"]
+            },
+            "description": "Create a support ticket."
+          }
+        },
+        {
+          "name": "Get My Tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/support/tickets",
+              "host": ["{{base_url}}"],
+              "path": ["support", "tickets"]
+            },
+            "description": "Get all support tickets created by the student."
+          }
+        }
+      ]
+    }
+  ]
+}
+

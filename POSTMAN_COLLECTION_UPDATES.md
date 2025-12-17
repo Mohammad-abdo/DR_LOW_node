@@ -1,122 +1,260 @@
-# Postman Collection Updates - Gender Field
+# Postman Collection Updates
 
-## ✅ التحديثات المطبقة:
+This document lists all new endpoints that need to be added to the Postman collection.
 
-### 1. **Register Student** - تم التحديث
-- ✅ إضافة حقل `gender` (اختياري: MALE أو FEMALE)
-- ✅ تحديث بيانات الاختبار مع gender: MALE
-- ✅ إضافة مثال إضافي: "Register Student (Female Example)" مع gender: FEMALE
-- ✅ إضافة مثال إضافي: "Register Student (No Gender)" بدون gender
+## New Endpoints to Add
 
-### 2. **Update Profile** - تم التحديث
-- ✅ إضافة حقل `gender` في form-data
-- ✅ إضافة جميع الحقول المسموح بها:
-  - `nameAr` - الاسم بالعربية
-  - `nameEn` - الاسم بالإنجليزية
-  - `phone` - رقم الهاتف
-  - `year` - السنة الدراسية
-  - `semester` - الفصل الدراسي
-  - `department` - القسم
-  - `gender` - الجنس (MALE أو FEMALE)
-  - `avatar` - صورة الملف الشخصي (file upload)
-- ✅ بيانات اختبار جاهزة للاستخدام مع gender: MALE
-- ✅ إضافة مثال إضافي: "Update Profile (Female Example)" مع gender: FEMALE
+### 1. Course Requests (Manual Course Activation)
 
-### 3. **Get Profile** - تم التحديث
-- ✅ إضافة وصف يوضح أن gender متضمن في الاستجابة
+#### Admin Endpoints
 
-### 4. **Get Current User** - تم التحديث
-- ✅ إضافة وصف يوضح أن gender متضمن في الاستجابة
+**Get All Course Requests**
+```
+GET {{base_url}}/admin/course-requests
+Query Params:
+  - status: pending|approved|rejected (optional)
+  - studentId: string (optional)
+  - courseId: string (optional)
+```
 
-### 5. **Change Password** - تم التحديث
-- ✅ تحديث بيانات الاختبار لتكون أكثر واقعية
+**Get Course Request By ID**
+```
+GET {{base_url}}/admin/course-requests/:id
+```
 
-## 📝 أمثلة بيانات الاختبار:
+**Approve Course Request**
+```
+POST {{base_url}}/admin/course-requests/:id/approve
+Body: (empty)
+```
 
-### Register Student - Male
-```json
+**Reject Course Request**
+```
+POST {{base_url}}/admin/course-requests/:id/reject
+Body:
 {
-  "nameAr": "محمد أحمد",
-  "nameEn": "Mohamed Ahmed",
-  "email": "student.male@example.com",
-  "phone": "+96512345678",
-  "password": "password123",
-  "repeatPassword": "password123",
-  "gender": "MALE",
-  "year": 3,
-  "semester": 1,
-  "department": "Law"
+  "rejectionReason": "Optional reason for rejection"
 }
 ```
 
-### Register Student - Female
-```json
+**Bulk Approve Course Requests**
+```
+POST {{base_url}}/admin/course-requests/bulk-approve
+Body:
 {
-  "nameAr": "نورا سعيد",
-  "nameEn": "Nora Saeed",
-  "email": "student.female@example.com",
-  "phone": "+96512345679",
-  "password": "password123",
-  "repeatPassword": "password123",
-  "gender": "FEMALE",
-  "year": 2,
-  "semester": 2,
-  "department": "Law"
+  "requestIds": ["request-id-1", "request-id-2", "request-id-3"]
 }
 ```
 
-### Register Student - Without Gender (Optional)
-```json
+#### Student Endpoints
+
+**Submit Cart as Course Requests**
+```
+POST {{base_url}}/mobile/student/cart/submit
+Body: (empty)
+```
+
+### 2. About App
+
+**Get About App (Public)**
+```
+GET {{base_url}}/app/about
+```
+
+**Admin: Get About App**
+```
+GET {{base_url}}/admin/about-app
+```
+
+**Admin: Create About App**
+```
+POST {{base_url}}/admin/about-app
+Body:
 {
-  "nameAr": "علي خالد",
-  "nameEn": "Ali Khalid",
-  "email": "student.nogender@example.com",
-  "phone": "+96512345680",
-  "password": "password123",
-  "repeatPassword": "password123",
-  "year": 4,
-  "semester": 1,
-  "department": "Law"
+  "appName": "Dr. Law LMS",
+  "description": "Learning Management System",
+  "version": "1.0.0",
+  "whatsappPhone1": "+96512345678",
+  "whatsappPhone2": "+96587654321"
 }
 ```
 
-### Update Profile - Form Data
+**Admin: Update About App**
 ```
-nameAr: محمد أحمد
-nameEn: Mohamed Ahmed
-phone: +96512345678
-year: 3
-semester: 1
-department: Law
-gender: MALE
-avatar: [file upload - optional]
+PUT {{base_url}}/admin/about-app/:id
+Body:
+{
+  "appName": "Updated Name",
+  "description": "Updated description",
+  "version": "1.1.0"
+}
 ```
 
-## 🔒 Security Notes:
+### 3. Help & Support
 
-- **Whitelist Approach**: فقط الحقول المسموح بها يمكن تحديثها
-- **Protected Fields**: الحقول التالية محظورة من التحديث:
-  - `id`, `email`, `password`, `role`, `status`, `refreshToken`
-- **JWT Authentication**: المستخدم يمكنه تحديث ملفه فقط
+**Get Help & Support (Public)**
+```
+GET {{base_url}}/app/help-support
+```
 
-## 🧪 Testing:
+**Admin: Get All Help & Support**
+```
+GET {{base_url}}/admin/help-support
+```
 
-1. **Register Student with Gender**:
-   - استخدم "Register Student" مع `gender: "MALE"` أو `"FEMALE"`
-   - يجب أن يعمل بنجاح
+**Admin: Create Help & Support**
+```
+POST {{base_url}}/admin/help-support
+Body:
+{
+  "title": "Need Help?",
+  "description": "Contact us via WhatsApp",
+  "whatsappPhone1": "+96512345678",
+  "whatsappPhone2": "+96587654321"
+}
+```
 
-2. **Update Profile with Gender**:
-   - سجّل الدخول كطالب
-   - استخدم "Update Profile" وأضف `gender` في form-data
-   - يجب أن يتم التحديث بنجاح
+**Admin: Update Help & Support**
+```
+PUT {{base_url}}/admin/help-support/:id
+Body:
+{
+  "title": "Updated Title",
+  "description": "Updated description"
+}
+```
 
-3. **Get Profile**:
-   - بعد التحديث، استخدم "Get Profile"
-   - يجب أن ترى `gender` في الاستجابة
+**Admin: Delete Help & Support**
+```
+DELETE {{base_url}}/admin/help-support/:id
+```
 
-## 📋 ملاحظات:
+### 4. App Policies (Privacy Policy & Terms)
 
-- حقل `gender` اختياري في التسجيل
-- يمكن تحديث `gender` من Update Profile
-- القيم المقبولة: `MALE`, `FEMALE`, أو `null`
+**Get App Policies (Public)**
+```
+GET {{base_url}}/app/policies
+Query Params:
+  - type: privacy_policy|terms_and_conditions (optional)
+```
 
+**Admin: Get All Policies**
+```
+GET {{base_url}}/admin/policies
+```
+
+**Admin: Create Policy**
+```
+POST {{base_url}}/admin/policies
+Body:
+{
+  "type": "privacy_policy",
+  "content": "Privacy policy content here..."
+}
+```
+
+**Admin: Update Policy**
+```
+PUT {{base_url}}/admin/policies/:id
+Body:
+{
+  "content": "Updated policy content..."
+}
+```
+
+**Admin: Delete Policy**
+```
+DELETE {{base_url}}/admin/policies/:id
+```
+
+### 5. Enhanced Logout
+
+**Logout (Enhanced)**
+```
+POST {{base_url}}/auth/logout
+Body:
+{
+  "logoutAllDevices": false
+}
+```
+
+### 6. Delete Student Account
+
+**Delete Student Account**
+```
+DELETE {{base_url}}/mobile/student/profile
+Body:
+{
+  "password": "student_password"
+}
+```
+
+## Instructions
+
+1. Open Postman
+2. Import the existing `LMS_API.postman_collection.json`
+3. Add the above endpoints to the appropriate folders:
+   - Course Requests → Admin (Web) folder
+   - About App, Help & Support, App Policies → Admin (Web) folder
+   - Enhanced Logout → Authentication folder
+   - Delete Account → Mobile Student folder
+   - Submit Cart → Mobile Student folder
+4. Save the collection
+
+## Collection Structure
+
+```
+LMS API - Complete Collection
+├── Authentication
+│   ├── Login
+│   ├── Register Student
+│   ├── Register Teacher
+│   ├── Refresh Token
+│   └── Logout (Enhanced) ← NEW
+├── Admin (Web)
+│   ├── Dashboard
+│   ├── Users
+│   ├── Categories
+│   ├── Courses
+│   ├── Course Requests ← NEW FOLDER
+│   │   ├── Get All Course Requests
+│   │   ├── Get Course Request By ID
+│   │   ├── Approve Course Request
+│   │   ├── Reject Course Request
+│   │   └── Bulk Approve Course Requests
+│   ├── About App ← NEW FOLDER
+│   │   ├── Get About App (Public)
+│   │   ├── Admin: Get About App
+│   │   ├── Admin: Create About App
+│   │   └── Admin: Update About App
+│   ├── Help & Support ← NEW FOLDER
+│   │   ├── Get Help & Support (Public)
+│   │   ├── Admin: Get All Help & Support
+│   │   ├── Admin: Create Help & Support
+│   │   ├── Admin: Update Help & Support
+│   │   └── Admin: Delete Help & Support
+│   ├── App Policies ← NEW FOLDER
+│   │   ├── Get App Policies (Public)
+│   │   ├── Admin: Get All Policies
+│   │   ├── Admin: Create Policy
+│   │   ├── Admin: Update Policy
+│   │   └── Admin: Delete Policy
+│   └── ...
+└── Mobile Student
+    ├── Cart
+    │   ├── Get Cart
+    │   ├── Add to Cart
+    │   ├── Submit Cart ← NEW
+    │   ├── Remove from Cart
+    │   └── Clear Cart
+    ├── Profile
+    │   └── Delete Account ← NEW
+    └── ...
+```
+
+## Notes
+
+- All endpoints require authentication except public endpoints (marked as Public)
+- Use `{{base_url}}` variable for base URL
+- Use `{{auth_token}}` variable for Bearer token
+- Use `{{course_id}}`, `{{user_id}}`, etc. for dynamic values

@@ -1,5 +1,6 @@
 import prisma from '../../config/database.js';
 import { notifyContentChange } from '../../services/notificationService.js';
+import { convertImageUrls } from '../../utils/imageHelper.js';
 
 export const getCourseContent = async (req, res, next) => {
   try {
@@ -35,13 +36,16 @@ export const getCourseContent = async (req, res, next) => {
 
     console.log(`Course ${courseId} - Chapters: ${chapters.length}, Standalone Content: ${content.length}, Total Content: ${allContent.length}`);
 
+    // Convert all image and video URLs to full URLs with domain name
+    const dataWithUrls = convertImageUrls({
+      chapters,
+      content,
+      allContent,
+    }, ['image', 'coverImage', 'avatar', 'videoUrl', 'fileUrl']);
+
     res.json({
       success: true,
-      data: { 
-        chapters, 
-        content,
-        allContent, // Include all content for easier access
-      },
+      data: dataWithUrls,
     });
   } catch (error) {
     console.error("Error in getCourseContent:", error);
@@ -79,7 +83,10 @@ export const createCourseContent = async (req, res, next) => {
     let finalVideoUrl = videoUrl;
     let finalFileUrl = fileUrl;
 
-    if (req.files) {
+    // If videoUrl is provided (from chunked upload), use it
+    if (videoUrl && videoUrl.startsWith('/uploads/videos/')) {
+      finalVideoUrl = videoUrl;
+    } else if (req.files) {
       if (req.files.video && req.files.video[0]) {
         finalVideoUrl = `/uploads/videos/${req.files.video[0].filename}`;
       }
@@ -112,10 +119,13 @@ export const createCourseContent = async (req, res, next) => {
       console.error('Failed to send notification for content creation:', err);
     });
 
+    // Convert image and video URLs to full URLs with domain name
+    const contentWithUrls = convertImageUrls(courseContent, ['image', 'coverImage', 'avatar', 'videoUrl', 'fileUrl']);
+
     res.status(201).json({
       success: true,
       message: 'Course content created successfully',
-      data: { content: courseContent },
+      data: { content: contentWithUrls },
     });
   } catch (error) {
     next(error);
@@ -156,13 +166,21 @@ export const updateCourseContent = async (req, res, next) => {
       ...(isIntroVideo !== undefined && { isIntroVideo: isIntroVideo === 'true' || isIntroVideo === true }),
     };
 
-    if (req.files) {
+    // If videoUrl is provided (from chunked upload), use it
+    if (videoUrl && videoUrl.startsWith('/uploads/videos/')) {
+      updateData.videoUrl = videoUrl;
+    } else if (req.files) {
       if (req.files.video && req.files.video[0]) {
         updateData.videoUrl = `/uploads/videos/${req.files.video[0].filename}`;
       }
       if (req.files.file && req.files.file[0]) {
         updateData.fileUrl = `/uploads/files/${req.files.file[0].filename}`;
       }
+    }
+    
+    // If fileUrl is provided, use it
+    if (fileUrl && fileUrl.startsWith('/uploads/files/')) {
+      updateData.fileUrl = fileUrl;
     } else {
       if (fileUrl !== undefined) updateData.fileUrl = fileUrl;
       if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
@@ -186,10 +204,13 @@ export const updateCourseContent = async (req, res, next) => {
       console.error('Failed to send notification for content update:', err);
     });
 
+    // Convert image and video URLs to full URLs with domain name
+    const contentWithUrls = convertImageUrls(courseContent, ['image', 'coverImage', 'avatar', 'videoUrl', 'fileUrl']);
+
     res.json({
       success: true,
       message: 'Course content updated successfully',
-      data: { content: courseContent },
+      data: { content: contentWithUrls },
     });
   } catch (error) {
     next(error);

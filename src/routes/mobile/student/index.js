@@ -20,6 +20,9 @@ import * as paymentController from '../../../controllers/mobile/student/paymentC
 // Learning routes
 import * as learningController from '../../../controllers/mobile/student/learningController.js';
 
+// Video routes (secure streaming)
+import * as videoController from '../../../controllers/mobile/student/videoController.js';
+
 // Exam routes
 import * as examController from '../../../controllers/mobile/student/examController.js';
 
@@ -32,8 +35,14 @@ import * as quizController from '../../../controllers/mobile/student/quizControl
 // Profile routes
 import * as profileController from '../../../controllers/mobile/student/profileController.js';
 
+// Auth routes
+import * as authController from '../../../controllers/mobile/student/authController.js';
+
 // Support routes
 import * as supportController from '../../../controllers/mobile/student/supportController.js';
+
+// App info routes (public endpoints accessible to authenticated students)
+import * as appController from '../../../controllers/mobile/public/appController.js';
 
 const router = express.Router();
 
@@ -57,9 +66,10 @@ router.get('/courses/:id', courseController.getCourseById);
 // Search
 router.get('/search', courseController.searchCourses);
 
-// Cart
+// Cart (Course Requests)
 router.get('/cart', cartController.getCart);
 router.post('/cart', cartController.addToCart);
+router.post('/cart/submit', cartController.submitCart); // Submit cart as course requests
 router.delete('/cart/:courseId', cartController.removeFromCart);
 router.delete('/cart', cartController.clearCart);
 
@@ -68,14 +78,18 @@ router.get('/wishlist', wishlistController.getWishlist);
 router.post('/wishlist', wishlistController.addToWishlist);
 router.delete('/wishlist/:courseId', wishlistController.removeFromWishlist);
 
-// Payments
-router.post('/payments', paymentController.createPayment);
-router.get('/payments', paymentController.getMyPayments);
+// Payments (DISABLED - Use course requests instead)
+// router.post('/payments', paymentController.createPayment); // Disabled - use cart/submit instead
+// router.get('/payments', paymentController.getMyPayments); // Disabled
 
 // Learning
 router.get('/my-courses', learningController.getMyCourses);
 router.get('/courses/:courseId/content', learningController.getCourseContent);
 router.post('/progress', learningController.markContentComplete);
+
+// Video Streaming (Secure)
+router.get('/video/token/:contentId', videoController.getVideoToken);
+router.get('/video/stream/:contentId', videoController.streamVideo);
 
 // Exams
 router.get('/exams', examController.getMyExams);
@@ -93,9 +107,22 @@ router.get('/content/:contentId/quiz', quizController.getQuizByContent);
 router.post('/content/:contentId/quiz/submit', quizController.submitQuiz);
 router.get('/content/:contentId/quiz/result', quizController.getQuizResult);
 
+// Auth
+router.post('/auth/logout', authController.logout);
+
 // Profile
 router.delete('/profile', profileController.deleteAccount);
-router.get('/share', profileController.shareApp);
+router.get('/share', profileController.shareApp); // Invite friend / Share app
+
+// App Information (Public endpoints accessible to authenticated students)
+router.get('/about', appController.getAboutApp);
+router.get('/help-support', appController.getHelpSupport);
+router.get('/privacy-policy', appController.getPrivacyPolicy);
+router.get('/terms', appController.getTermsAndConditions);
+router.get('/policies', appController.getAllPolicies);
+
+// Notifications
+router.get('/notifications/unread-count', profileController.getUnreadCount);
 
 // Support
 router.get('/help', supportController.getHelpContent);
