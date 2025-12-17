@@ -14,7 +14,16 @@ export const errorHandler = (err, req, res, next) => {
       message: err.message || 'File upload error',
     });
   }
-  console.error('Error:', err);
+
+  // Log error details
+  console.error('Error Details:', {
+    message: err.message,
+    name: err.name,
+    code: err.code,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+  });
 
   if (err.name === 'ValidationError') {
     return res.status(400).json({
@@ -38,12 +47,33 @@ export const errorHandler = (err, req, res, next) => {
         message: 'Record not found',
       });
     }
+    // Handle other Prisma errors
+    return res.status(500).json({
+      success: false,
+      message: 'Database error',
+      ...(process.env.NODE_ENV === 'development' && { 
+        prismaCode: err.code,
+        prismaMeta: err.meta,
+      }),
+    });
+  }
+
+  // Handle Prisma validation errors
+  if (err.name === 'PrismaClientValidationError') {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid data provided',
+      ...(process.env.NODE_ENV === 'development' && { details: err.message }),
+    });
   }
 
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(process.env.NODE_ENV === 'development' && { 
+      stack: err.stack,
+      error: err.toString(),
+    }),
   });
 };
 

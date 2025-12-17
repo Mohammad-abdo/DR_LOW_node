@@ -23,6 +23,7 @@ export const getHelpSupport = async (req, res, next) => {
       data: { helpSupport },
     });
   } catch (error) {
+    console.error('Error in helpSupportController:', error);
     next(error);
   }
 };
@@ -33,15 +34,37 @@ export const getHelpSupport = async (req, res, next) => {
  */
 export const getAllHelpSupport = async (req, res, next) => {
   try {
-    const helpSupportList = await prisma.helpSupport.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
+    // Check if helpSupport model exists
+    if (!prisma.helpSupport) {
+      console.warn('HelpSupport model not found in Prisma client. Please run: npm run prisma:generate');
+      return res.json({
+        success: true,
+        data: { helpSupport: [] },
+      });
+    }
+
+    let helpSupportList = [];
+    
+    try {
+      helpSupportList = await prisma.helpSupport.findMany({
+        orderBy: { updatedAt: 'desc' },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, return empty array instead of error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('HelpSupport table may not exist, returning empty data');
+        helpSupportList = [];
+      } else {
+        throw dbError;
+      }
+    }
 
     res.json({
       success: true,
       data: { helpSupport: helpSupportList },
     });
   } catch (error) {
+    console.error('Error in helpSupportController:', error);
     next(error);
   }
 };
@@ -78,6 +101,7 @@ export const createHelpSupport = async (req, res, next) => {
       data: { helpSupport },
     });
   } catch (error) {
+    console.error('Error in helpSupportController:', error);
     next(error);
   }
 };
@@ -120,6 +144,7 @@ export const updateHelpSupport = async (req, res, next) => {
       data: { helpSupport: updatedHelpSupport },
     });
   } catch (error) {
+    console.error('Error in helpSupportController:', error);
     next(error);
   }
 };
@@ -154,6 +179,7 @@ export const deleteHelpSupport = async (req, res, next) => {
       messageAr: 'تم حذف معلومات المساعدة والدعم بنجاح',
     });
   } catch (error) {
+    console.error('Error in helpSupportController:', error);
     next(error);
   }
 };

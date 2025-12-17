@@ -39,6 +39,7 @@ export const getAppPolicies = async (req, res, next) => {
       data: { policies },
     });
   } catch (error) {
+    console.error('Error in appPolicyController:', error);
     next(error);
   }
 };
@@ -49,15 +50,37 @@ export const getAppPolicies = async (req, res, next) => {
  */
 export const getAllAppPolicies = async (req, res, next) => {
   try {
-    const policies = await prisma.appPolicy.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
+    // Check if appPolicy model exists
+    if (!prisma.appPolicy) {
+      console.warn('AppPolicy model not found in Prisma client. Please run: npm run prisma:generate');
+      return res.json({
+        success: true,
+        data: { policies: [] },
+      });
+    }
+
+    let policies = [];
+    
+    try {
+      policies = await prisma.appPolicy.findMany({
+        orderBy: { updatedAt: 'desc' },
+      });
+    } catch (dbError) {
+      // If table doesn't exist, return empty array instead of error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('AppPolicy table may not exist, returning empty data');
+        policies = [];
+      } else {
+        throw dbError;
+      }
+    }
 
     res.json({
       success: true,
       data: { policies },
     });
   } catch (error) {
+    console.error('Error in appPolicyController:', error);
     next(error);
   }
 };
@@ -115,6 +138,7 @@ export const createAppPolicy = async (req, res, next) => {
       data: { policy },
     });
   } catch (error) {
+    console.error('Error in appPolicyController:', error);
     next(error);
   }
 };
@@ -160,6 +184,7 @@ export const updateAppPolicy = async (req, res, next) => {
       data: { policy: updatedPolicy },
     });
   } catch (error) {
+    console.error('Error in appPolicyController:', error);
     next(error);
   }
 };
@@ -194,6 +219,7 @@ export const deleteAppPolicy = async (req, res, next) => {
       messageAr: 'تم حذف السياسة بنجاح',
     });
   } catch (error) {
+    console.error('Error in appPolicyController:', error);
     next(error);
   }
 };

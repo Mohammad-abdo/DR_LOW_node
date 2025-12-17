@@ -8,6 +8,18 @@ import { notifyPurchase } from '../../services/notificationService.js';
  */
 export const getAllCourseRequests = async (req, res, next) => {
   try {
+    // Check if courseRequest model exists in Prisma client
+    if (!prisma.courseRequest) {
+      console.warn('CourseRequest model not found in Prisma client. Please run: npm run prisma:generate');
+      return res.json({
+        success: true,
+        data: {
+          requests: [],
+          counts: { pending: 0, approved: 0, rejected: 0 },
+        },
+      });
+    }
+
     const { status, studentId, courseId } = req.query;
 
     const where = {};
@@ -21,51 +33,65 @@ export const getAllCourseRequests = async (req, res, next) => {
       where.courseId = courseId;
     }
 
-    const requests = await prisma.courseRequest.findMany({
-      where,
-      include: {
-        student: {
-          select: {
-            id: true,
-            nameAr: true,
-            nameEn: true,
-            email: true,
-            phone: true,
-          },
-        },
-        course: {
-          select: {
-            id: true,
-            titleAr: true,
-            titleEn: true,
-            price: true,
-            finalPrice: true,
-            teacher: {
-              select: {
-                nameAr: true,
-                nameEn: true,
-              },
-            },
-            category: {
-              select: {
-                nameAr: true,
-                nameEn: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    let requests = [];
+    let counts = { pending: 0, approved: 0, rejected: 0 };
 
-    // Count by status
-    const counts = {
-      pending: await prisma.courseRequest.count({ where: { status: 'pending' } }),
-      approved: await prisma.courseRequest.count({ where: { status: 'approved' } }),
-      rejected: await prisma.courseRequest.count({ where: { status: 'rejected' } }),
-    };
+    try {
+      requests = await prisma.courseRequest.findMany({
+        where,
+        include: {
+          student: {
+            select: {
+              id: true,
+              nameAr: true,
+              nameEn: true,
+              email: true,
+              phone: true,
+            },
+          },
+          course: {
+            select: {
+              id: true,
+              titleAr: true,
+              titleEn: true,
+              price: true,
+              finalPrice: true,
+              teacher: {
+                select: {
+                  nameAr: true,
+                  nameEn: true,
+                },
+              },
+              category: {
+                select: {
+                  nameAr: true,
+                  nameEn: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      // Count by status
+      counts = {
+        pending: await prisma.courseRequest.count({ where: { status: 'pending' } }),
+        approved: await prisma.courseRequest.count({ where: { status: 'approved' } }),
+        rejected: await prisma.courseRequest.count({ where: { status: 'rejected' } }),
+      };
+    } catch (dbError) {
+      // If table doesn't exist, return empty data instead of error
+      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
+        console.warn('CourseRequest table may not exist, returning empty data');
+        requests = [];
+        counts = { pending: 0, approved: 0, rejected: 0 };
+      } else {
+        throw dbError;
+      }
+    }
 
     res.json({
       success: true,
@@ -75,6 +101,7 @@ export const getAllCourseRequests = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('Error in getAllCourseRequests:', error);
     next(error);
   }
 };
@@ -85,6 +112,15 @@ export const getAllCourseRequests = async (req, res, next) => {
  */
 export const getCourseRequestById = async (req, res, next) => {
   try {
+    // Check if courseRequest model exists
+    if (!prisma.courseRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course request feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة طلب الدورة غير متاحة',
+      });
+    }
+
     const { id } = req.params;
 
     const request = await prisma.courseRequest.findUnique({
@@ -134,6 +170,7 @@ export const getCourseRequestById = async (req, res, next) => {
       data: { request },
     });
   } catch (error) {
+    console.error('Error in getAllCourseRequests:', error);
     next(error);
   }
 };
@@ -149,6 +186,15 @@ export const getCourseRequestById = async (req, res, next) => {
  */
 export const approveCourseRequest = async (req, res, next) => {
   try {
+    // Check if courseRequest model exists
+    if (!prisma.courseRequest) {
+      return res.status(500).json({
+        success: false,
+        message: 'Course request feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة طلب الدورة غير متاحة',
+      });
+    }
+
     const { id } = req.params;
 
     const request = await prisma.courseRequest.findUnique({
@@ -242,6 +288,7 @@ export const approveCourseRequest = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('Error in getAllCourseRequests:', error);
     next(error);
   }
 };
@@ -257,6 +304,15 @@ export const approveCourseRequest = async (req, res, next) => {
  */
 export const rejectCourseRequest = async (req, res, next) => {
   try {
+    // Check if courseRequest model exists
+    if (!prisma.courseRequest) {
+      return res.status(500).json({
+        success: false,
+        message: 'Course request feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة طلب الدورة غير متاحة',
+      });
+    }
+
     const { id } = req.params;
     const { rejectionReason } = req.body;
 
@@ -303,6 +359,7 @@ export const rejectCourseRequest = async (req, res, next) => {
       data: { request: updatedRequest },
     });
   } catch (error) {
+    console.error('Error in getAllCourseRequests:', error);
     next(error);
   }
 };
@@ -318,6 +375,15 @@ export const rejectCourseRequest = async (req, res, next) => {
  */
 export const bulkApproveCourseRequests = async (req, res, next) => {
   try {
+    // Check if courseRequest model exists
+    if (!prisma.courseRequest) {
+      return res.status(500).json({
+        success: false,
+        message: 'Course request feature not available. Please run: npm run prisma:generate',
+        messageAr: 'ميزة طلب الدورة غير متاحة',
+      });
+    }
+
     const { requestIds } = req.body;
 
     if (!requestIds || !Array.isArray(requestIds) || requestIds.length === 0) {
@@ -416,6 +482,7 @@ export const bulkApproveCourseRequests = async (req, res, next) => {
       data: results,
     });
   } catch (error) {
+    console.error('Error in getAllCourseRequests:', error);
     next(error);
   }
 };
