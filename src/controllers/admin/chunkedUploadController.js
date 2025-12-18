@@ -85,23 +85,26 @@ export const uploadChunk = async (req, res, next) => {
       const finalFileName = `${dzuuid}${path.extname(file.originalname)}`;
       const finalPath = path.join(videosDir, finalFileName);
 
-      // Read and merge all chunks in order
-      const chunks = [];
+      // Merge chunks to final file using a write stream to avoid loading all into memory
+      const writeStream = fs.createWriteStream(finalPath);
+
       for (let i = 0; i < parseInt(dztotalchunkcount); i++) {
-        const chunkPath = path.join(chunkDir, `chunk-${i}`);
-        const chunkData = await readFile(chunkPath);
-        chunks.push(chunkData);
+        const currentChunkPath = path.join(chunkDir, `chunk-${i}`);
+        const chunkData = await readFile(currentChunkPath);
+        writeStream.write(chunkData);
       }
 
-      // Merge chunks
-      const mergedBuffer = Buffer.concat(chunks);
-      await writeFile(finalPath, mergedBuffer);
+      // Finish writing
+      await new Promise((resolve, reject) => {
+        writeStream.end(() => resolve());
+        writeStream.on('error', reject);
+      });
 
       // Clean up chunks directory
       for (let i = 0; i < parseInt(dztotalchunkcount); i++) {
-        const chunkPath = path.join(chunkDir, `chunk-${i}`);
-        if (await exists(chunkPath)) {
-          await unlink(chunkPath);
+        const currentChunkPath = path.join(chunkDir, `chunk-${i}`);
+        if (await exists(currentChunkPath)) {
+          await unlink(currentChunkPath);
         }
       }
       if (fs.existsSync(chunkDir)) {
@@ -227,5 +230,6 @@ export const cleanupChunks = async (req, res, next) => {
     next(error);
   }
 };
+
 
 

@@ -122,3 +122,6 @@ npm run test:coverage # With coverage
 4. Increase test coverage to 80%+
 5. Add E2E tests with Playwright or Cypress
 
+
+
+

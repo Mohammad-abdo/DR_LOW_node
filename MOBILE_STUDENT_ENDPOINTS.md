@@ -476,3 +476,6 @@ export const getPrivacyPolicy = async () => {
 4. **HTTP Status Codes:** 200 (success), 400 (bad request), 401 (unauthorized), 404 (not found), 500 (server error)
 
 
+
+
+

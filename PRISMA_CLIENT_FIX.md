@@ -72,3 +72,6 @@ Add to your CI/CD pipeline:
 2. Always run `npm run prisma:migrate` before starting the server
 3. Add a health check that verifies Prisma models are available
 
+
+
+

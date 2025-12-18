@@ -1,6 +1,6 @@
 import prisma from '../config/database.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken, verifyAccessToken } from '../utils/jwt.js';
 import { ROLES, USER_STATUS } from '../config/constants.js';
 
 /**
@@ -67,6 +67,7 @@ export const login = async (req, res, next) => {
     const isPasswordValid = await comparePassword(password, user.password);
 
     if (!isPasswordValid) {
+      console.error('Login failed: Invalid password for user', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
@@ -353,36 +354,66 @@ export const refreshToken = async (req, res, next) => {
  *     tags: [Authentication]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               logoutAllDevices:
+ *                 type: boolean
+ *                 description: If true, invalidates all refresh tokens (logout from all devices)
  */
 export const logout = async (req, res, next) => {
   try {
+    const { logoutAllDevices = false } = req.body;
     const authHeader = req.headers.authorization;
     const token = authHeader?.substring(7);
 
     if (token) {
-      const decoded = verifyAccessToken(token);
-      if (decoded) {
-        // Add token to blacklist
-        const expiresAt = new Date(decoded.exp * 1000);
-        await prisma.tokenBlacklist.create({
-          data: {
-            token,
-            expiresAt,
-          },
-        });
+      try {
+        const decoded = verifyAccessToken(token);
+        if (decoded) {
+          // Add token to blacklist
+          const expiresAt = new Date(decoded.exp * 1000);
+          await prisma.tokenBlacklist.create({
+            data: {
+              token,
+              expiresAt,
+            },
+          });
+        }
+      } catch (tokenError) {
+        // Token might be expired or invalid, continue with logout
+        console.log('Token verification failed during logout:', tokenError.message);
       }
     }
 
     if (req.user) {
-      await prisma.user.update({
-        where: { id: req.user.id },
-        data: { refreshToken: null },
-      });
+      if (logoutAllDevices) {
+        // Invalidate all refresh tokens for this user (logout from all devices)
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: { refreshToken: null },
+        });
+      } else {
+        // Only clear refresh token if it matches (optional - for single device logout)
+        // For now, we'll clear it anyway since we don't track device-specific tokens
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: { refreshToken: null },
+        });
+      }
     }
 
     res.json({
       success: true,
-      message: 'Logged out successfully',
+      message: logoutAllDevices 
+        ? 'Logged out from all devices successfully' 
+        : 'Logged out successfully',
+      messageAr: logoutAllDevices 
+        ? 'تم تسجيل الخروج من جميع الأجهزة بنجاح' 
+        : 'تم تسجيل الخروج بنجاح',
     });
   } catch (error) {
     next(error);

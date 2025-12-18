@@ -1,6 +1,7 @@
 import prisma from '../../../config/database.js';
 import { notifyCourseCompletion, notifyProgress } from '../../../services/notificationService.js';
 import { convertImageUrls } from '../../../utils/imageHelper.js';
+import { filterExpiredCourses } from '../../../middlewares/courseExpiration.js';
 
 export const getMyCourses = async (req, res, next) => {
   try {
@@ -168,6 +169,8 @@ export const getCourseContent = async (req, res, next) => {
       });
     }
 
+    // Check course expiration
+    const now = new Date();
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       include: {

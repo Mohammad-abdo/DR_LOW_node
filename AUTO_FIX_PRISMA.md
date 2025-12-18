@@ -84,3 +84,6 @@ If you see warnings about missing models, the auto-generation will attempt to fi
 - In development, you still need to run `npm run prisma:generate` manually if schema changes
 - The `postinstall` script ensures Prisma Client is always generated after `npm install`
 
+
+
+

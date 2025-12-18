@@ -24,3 +24,6 @@ router.get('/policies', appController.getAllPolicies);
 export default router;
 
 
+
+
+

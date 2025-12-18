@@ -90,3 +90,6 @@ pm2 restart dr-law-backend
 
 **Status:** Code is fixed and safe. Server needs `npm run prisma:generate` to be run.
 
+
+
+
