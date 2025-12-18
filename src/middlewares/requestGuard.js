@@ -55,6 +55,15 @@ export const duplicateRequestGuard = (req, res, next) => {
       return next();
     }
 
+    // Skip duplicate checking for chunked upload endpoints
+    // They legitimately send many similar POSTs in quick succession.
+    if (
+      req.path.startsWith('/api/admin/upload/video-chunk') ||
+      req.path.startsWith('/admin/upload/video-chunk')
+    ) {
+      return next();
+    }
+
     // Skip duplicate check for static file requests (uploads, images, videos)
     // These are naturally requested multiple times by browsers/video players
     const isStaticFileRequest = 
@@ -102,6 +111,14 @@ export const duplicateRequestGuard = (req, res, next) => {
  */
 export const rateLimitGuard = (req, res, next) => {
   try {
+    // Skip per-second rate guard for chunked upload endpoints
+    if (
+      req.path.startsWith('/api/admin/upload/video-chunk') ||
+      req.path.startsWith('/admin/upload/video-chunk')
+    ) {
+      return next();
+    }
+
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
     const now = Date.now();
     
