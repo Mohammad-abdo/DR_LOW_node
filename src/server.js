@@ -66,10 +66,32 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 // Middlewares
 // Handle multiple frontend URLs
 // Note: include production Vercel frontend by default to avoid CORS blocks on uploads/polling.
-const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173||https://dr-low.vercel.app")
+const rawAllowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173||https://dr-low.vercel.app")
     .split("||")
     .map((url) => url.trim())
     .filter((url) => url);
+
+// Always allow the production frontend even if FRONTEND_URL is set incorrectly in env
+rawAllowedOrigins.push("https://dr-low.vercel.app");
+
+// Normalize allowed origins:
+// - Accept entries with or without scheme (e.g. `dr-low.vercel.app`)
+// - Compare by hostname (more robust across http/https)
+const allowedHostnames = new Set(
+    rawAllowedOrigins
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+        .map((entry) => {
+            try {
+                // If scheme is missing, assume https for parsing
+                const normalized = entry.includes("://") ? entry : `https://${entry}`;
+                return new URL(normalized).hostname.toLowerCase();
+            } catch {
+                return null;
+            }
+        })
+        .filter(Boolean)
+);
 
 app.use(
     cors({
@@ -83,9 +105,15 @@ app.use(
                     origin
                 );
 
-            if (allowedOrigins.includes(origin) || isLocalNetwork) {
-                callback(null, true);
-            } else {
+            try {
+                const requestHostname = new URL(origin).hostname.toLowerCase();
+                if (allowedHostnames.has(requestHostname) || isLocalNetwork) {
+                    callback(null, true);
+                } else {
+                    callback(new Error("Not allowed by CORS"));
+                }
+            } catch {
+                // If origin is malformed, reject it
                 callback(new Error("Not allowed by CORS"));
             }
         },
