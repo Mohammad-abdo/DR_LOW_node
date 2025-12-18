@@ -13,7 +13,17 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skip: (req) => {
     // Skip rate limiting for health checks
-    return req.path === '/health' || req.path === '/health/db';
+    if (req.path === '/health' || req.path === '/health/db') return true;
+
+    // Skip rate limiting for chunked video upload endpoints (they can generate many requests)
+    if (
+      req.path.startsWith('/admin/upload/video-chunk') ||
+      req.path.startsWith('/admin/upload/video-chunk-status')
+    ) {
+      return true;
+    }
+
+    return false;
   },
 });
 

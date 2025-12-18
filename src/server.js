@@ -65,7 +65,8 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // Middlewares
 // Handle multiple frontend URLs
-const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
+// Note: include production Vercel frontend by default to avoid CORS blocks on uploads/polling.
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173||https://dr-low.vercel.app")
     .split("||")
     .map((url) => url.trim())
     .filter((url) => url);
@@ -89,6 +90,8 @@ app.use(
             }
         },
         credentials: true,
+        // Allow frontend JS to read rate-limit/backoff headers
+        exposedHeaders: ["Retry-After"],
     })
 );
 // Request guards - protect against infinite loops and duplicate requests

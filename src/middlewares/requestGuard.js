@@ -48,6 +48,13 @@ function getRequestKey(req) {
  */
 export const duplicateRequestGuard = (req, res, next) => {
   try {
+    // Never treat idempotent reads as "duplicates".
+    // Multiple components/pages may legitimately request the same GET endpoint at the same time
+    // (e.g. /notifications/unread-count), and blocking them creates 429 retry storms.
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+      return next();
+    }
+
     // Skip duplicate check for static file requests (uploads, images, videos)
     // These are naturally requested multiple times by browsers/video players
     const isStaticFileRequest = 
@@ -68,11 +75,14 @@ export const duplicateRequestGuard = (req, res, next) => {
       const cached = requestCache.get(key);
       if (now - cached.timestamp < CACHE_TTL) {
         console.warn(`⚠️ Duplicate request detected: ${req.method} ${req.path} from ${req.ip}`);
+        const retryAfter = Math.ceil((CACHE_TTL - (now - cached.timestamp)) / 1000);
+        // Help clients back off correctly (and allow frontend to read it with CORS exposed headers)
+        res.setHeader('Retry-After', String(retryAfter));
         return res.status(429).json({
           success: false,
           message: 'Duplicate request detected. Please wait before retrying.',
           messageAr: 'تم اكتشاف طلب مكرر. يرجى الانتظار قبل إعادة المحاولة.',
-          retryAfter: Math.ceil((CACHE_TTL - (now - cached.timestamp)) / 1000),
+          retryAfter,
         });
       }
     }
@@ -114,11 +124,13 @@ export const rateLimitGuard = (req, res, next) => {
     // Check if limit exceeded
     if (ipData.count > MAX_REQUESTS_PER_SECOND) {
       console.warn(`⚠️ Rate limit exceeded for IP: ${ip} - ${ipData.count} requests in 1 second`);
+      const retryAfter = Math.ceil((WINDOW_MS - (now - ipData.timestamp)) / 1000);
+      res.setHeader('Retry-After', String(retryAfter));
       return res.status(429).json({
         success: false,
         message: 'Too many requests. Please slow down.',
         messageAr: 'عدد كبير جداً من الطلبات. يرجى التباطؤ.',
-        retryAfter: Math.ceil((WINDOW_MS - (now - ipData.timestamp)) / 1000),
+        retryAfter,
       });
     }
     

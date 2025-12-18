@@ -2,16 +2,16 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { promisify } from 'util';
-import prisma from '../../config/database.js';
+import { finished as finishedCb } from 'stream';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const writeFile = promisify(fs.writeFile);
-const readFile = promisify(fs.readFile);
 const mkdir = promisify(fs.mkdir);
 const unlink = promisify(fs.unlink);
 const exists = promisify(fs.exists);
+const finished = promisify(finishedCb);
 
 // Chunks directory
 const chunksDir = path.join(__dirname, '../../uploads/chunks');
@@ -85,20 +85,22 @@ export const uploadChunk = async (req, res, next) => {
       const finalFileName = `${dzuuid}${path.extname(file.originalname)}`;
       const finalPath = path.join(videosDir, finalFileName);
 
-      // Merge chunks to final file using a write stream to avoid loading all into memory
-      const writeStream = fs.createWriteStream(finalPath);
+      // Merge chunks to final file using streams (faster + lower memory)
+      const writeStream = fs.createWriteStream(finalPath, { flags: 'w' });
 
       for (let i = 0; i < parseInt(dztotalchunkcount); i++) {
         const currentChunkPath = path.join(chunkDir, `chunk-${i}`);
-        const chunkData = await readFile(currentChunkPath);
-        writeStream.write(chunkData);
+        await new Promise((resolve, reject) => {
+          const readStream = fs.createReadStream(currentChunkPath);
+          readStream.on('error', reject);
+          writeStream.on('error', reject);
+          readStream.on('end', resolve);
+          readStream.pipe(writeStream, { end: false });
+        });
       }
 
-      // Finish writing
-      await new Promise((resolve, reject) => {
-        writeStream.end(() => resolve());
-        writeStream.on('error', reject);
-      });
+      writeStream.end();
+      await finished(writeStream);
 
       // Clean up chunks directory
       for (let i = 0; i < parseInt(dztotalchunkcount); i++) {
