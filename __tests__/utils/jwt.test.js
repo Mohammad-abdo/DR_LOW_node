@@ -1,4 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
+import jwt from 'jsonwebtoken';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -48,22 +49,19 @@ describe('JWT Utils', () => {
     });
 
     it('should return null for expired token', async () => {
-      // Create a token with very short expiration (1ms)
-      const oldExpiresIn = process.env.JWT_EXPIRES_IN;
-      process.env.JWT_EXPIRES_IN = '1ms';
-      
-      const token = generateAccessToken(testPayload);
+      // Create a token with very short expiration (1 second)
+      const secret = process.env.JWT_SECRET || 'test-secret';
+      const expiredToken = jwt.sign(
+        testPayload,
+        secret,
+        { expiresIn: '1ms' } // Token expires in 1 millisecond
+      );
       
       // Wait for token to expire
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      const decoded = verifyAccessToken(token);
+      const decoded = verifyAccessToken(expiredToken);
       expect(decoded).toBeNull();
-      
-      // Restore original expiration
-      if (oldExpiresIn) {
-        process.env.JWT_EXPIRES_IN = oldExpiresIn;
-      }
     });
   });
 
@@ -79,6 +77,49 @@ describe('JWT Utils', () => {
       const decoded = verifyRefreshToken('invalid-token');
       expect(decoded).toBeNull();
     });
+
+    it('should return null for expired refresh token', async () => {
+      // Create a refresh token with very short expiration
+      const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'test-secret';
+      const expiredToken = jwt.sign(
+        testPayload,
+        secret,
+        { expiresIn: '1ms' }
+      );
+      
+      // Wait for token to expire
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const decoded = verifyRefreshToken(expiredToken);
+      expect(decoded).toBeNull();
+    });
+  });
+
+  describe('Token expiration times', () => {
+    it('access token should have shorter expiration than refresh token', () => {
+      const accessToken = generateAccessToken(testPayload);
+      const refreshToken = generateRefreshToken(testPayload);
+      
+      const secret = process.env.JWT_SECRET || 'test-secret';
+      const refreshSecret = process.env.JWT_REFRESH_SECRET || secret;
+      
+      const decodedAccess = jwt.decode(accessToken);
+      const decodedRefresh = jwt.decode(refreshToken);
+      
+      // Refresh token should expire later than access token
+      expect(decodedRefresh.exp).toBeGreaterThan(decodedAccess.exp);
+    });
+  });
+
+  describe('Token payload structure', () => {
+    it('should include standard JWT claims', () => {
+      const token = generateAccessToken(testPayload);
+      const decoded = jwt.decode(token);
+      
+      expect(decoded.iat).toBeDefined(); // issued at
+      expect(decoded.exp).toBeDefined(); // expiration
+      expect(decoded.userId).toBe(testPayload.userId);
+      expect(decoded.role).toBe(testPayload.role);
+    });
   });
 });
-
