@@ -87,6 +87,10 @@ router.get('/my-courses', learningController.getMyCourses);
 router.get('/courses/:courseId/content', learningController.getCourseContent);
 router.post('/progress', learningController.markContentComplete);
 
+// Video Progress Tracking
+router.post('/video/progress', learningController.updateVideoProgress);
+router.post('/video/finish', learningController.finishVideo);
+
 // Video Streaming (Secure)
 router.get('/video/token/:contentId', videoController.getVideoToken);
 router.get('/video/stream/:contentId', videoController.streamVideo);
