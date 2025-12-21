@@ -5,6 +5,10 @@ import { filterExpiredCourses } from '../../../middlewares/courseExpiration.js';
 
 export const getMyCourses = async (req, res, next) => {
   try {
+    // Get status filter from query params (optional)
+    // Allowed values: 'not_started', 'in_progress', 'completed', or undefined (all)
+    const { status } = req.query;
+    
     // Get all purchases - no payment status check needed
     // Course access is now based on admin approval only
     const purchases = await prisma.purchase.findMany({
@@ -125,18 +129,41 @@ export const getMyCourses = async (req, res, next) => {
     const inProgress = coursesWithProgress.filter(c => c.status === 'in_progress');
     const completed = coursesWithProgress.filter(c => c.status === 'completed');
 
+    // Filter courses by status if provided
+    let filteredCourses = coursesWithProgress;
+    if (status) {
+      const validStatuses = ['not_started', 'in_progress', 'completed'];
+      if (validStatuses.includes(status)) {
+        filteredCourses = coursesWithProgress.filter(c => c.status === status);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid status filter. Allowed values: not_started, in_progress, completed',
+          messageAr: 'فلتر الحالة غير صحيح. القيم المسموحة: not_started, in_progress, completed',
+        });
+      }
+    }
+
     // Convert all image and video URLs to full URLs
     const coursesWithFullUrls = convertImageUrls(coursesWithProgress, ['coverImage', 'avatar', 'videoUrl', 'fileUrl']);
+    const filteredCoursesWithUrls = convertImageUrls(filteredCourses, ['coverImage', 'avatar', 'videoUrl', 'fileUrl']);
 
     res.json({
       success: true,
       data: {
-        courses: coursesWithFullUrls,
+        courses: status ? filteredCoursesWithUrls : coursesWithFullUrls, // Return filtered if status provided, otherwise all
         categorized: {
           notStarted: convertImageUrls(notStarted, ['coverImage', 'avatar', 'videoUrl', 'fileUrl']),
           inProgress: convertImageUrls(inProgress, ['coverImage', 'avatar', 'videoUrl', 'fileUrl']),
           completed: convertImageUrls(completed, ['coverImage', 'avatar', 'videoUrl', 'fileUrl']),
         },
+        // Add filter info if status was provided
+        ...(status && {
+          filter: {
+            status,
+            count: filteredCourses.length,
+          },
+        }),
       },
     });
   } catch (error) {
@@ -506,6 +533,244 @@ export const markContentComplete = async (req, res, next) => {
   }
 };
 
+/**
+ * Update video progress while watching (called periodically)
+ * POST /api/mobile/student/video/progress
+ * Body: { courseId, contentId, watchedDuration, totalDuration }
+ */
+export const updateVideoProgress = async (req, res, next) => {
+  try {
+    const { courseId, contentId, watchedDuration, totalDuration } = req.body;
 
+    if (!courseId || !contentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID and Content ID are required',
+        messageAr: 'معرف الدورة ومعرف المحتوى مطلوبان',
+      });
+    }
 
+    // Check if student has access to the course
+    const purchase = await prisma.purchase.findUnique({
+      where: {
+        studentId_courseId: {
+          studentId: req.user.id,
+          courseId,
+        },
+      },
+    });
+
+    if (!purchase) {
+      return res.status(403).json({
+        success: false,
+        message: 'Course not available. Please request access first.',
+        messageAr: 'الدورة غير متاحة. يرجى طلب الوصول أولاً.',
+      });
+    }
+
+    // Get content item
+    const content = await prisma.courseContent.findUnique({
+      where: { id: contentId },
+    });
+
+    if (!content || content.courseId !== courseId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Content not found',
+        messageAr: 'المحتوى غير موجود',
+      });
+    }
+
+    // Calculate watch percentage
+    const watchPercentage = totalDuration > 0 && watchedDuration
+      ? Math.min((watchedDuration / totalDuration) * 100, 100)
+      : 0;
+
+    // Update progress (don't mark as completed yet - only update progress)
+    await prisma.progress.upsert({
+      where: {
+        studentId_courseId_contentId: {
+          studentId: req.user.id,
+          courseId,
+          contentId,
+        },
+      },
+      create: {
+        studentId: req.user.id,
+        courseId,
+        contentId,
+        completed: false, // Not completed yet
+        progress: watchPercentage,
+      },
+      update: {
+        progress: watchPercentage,
+        // Don't update completed status here - only in finishVideo
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Video progress updated',
+      messageAr: 'تم تحديث تقدم الفيديو',
+      data: {
+        contentId,
+        progress: watchPercentage,
+        watchedDuration,
+        totalDuration,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Finish video (mark as completed)
+ * POST /api/mobile/student/video/finish
+ * Body: { courseId, contentId, watchedDuration, totalDuration }
+ */
+export const finishVideo = async (req, res, next) => {
+  try {
+    const { courseId, contentId, watchedDuration, totalDuration } = req.body;
+
+    if (!courseId || !contentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID and Content ID are required',
+        messageAr: 'معرف الدورة ومعرف المحتوى مطلوبان',
+      });
+    }
+
+    // Check if student has access to the course
+    const purchase = await prisma.purchase.findUnique({
+      where: {
+        studentId_courseId: {
+          studentId: req.user.id,
+          courseId,
+        },
+      },
+    });
+
+    if (!purchase) {
+      return res.status(403).json({
+        success: false,
+        message: 'Course not available. Please request access first.',
+        messageAr: 'الدورة غير متاحة. يرجى طلب الوصول أولاً.',
+      });
+    }
+
+    // Get content item
+    const content = await prisma.courseContent.findUnique({
+      where: { id: contentId },
+    });
+
+    if (!content || content.courseId !== courseId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Content not found',
+        messageAr: 'المحتوى غير موجود',
+      });
+    }
+
+    // Calculate watch percentage (if watched >= 80%, mark as completed)
+    const watchPercentage = totalDuration > 0 && watchedDuration
+      ? Math.min((watchedDuration / totalDuration) * 100, 100)
+      : 100; // If no duration provided, assume completed
+
+    const isCompleted = watchPercentage >= 80;
+
+    // Update progress and mark as completed if threshold reached
+    await prisma.progress.upsert({
+      where: {
+        studentId_courseId_contentId: {
+          studentId: req.user.id,
+          courseId,
+          contentId,
+        },
+      },
+      create: {
+        studentId: req.user.id,
+        courseId,
+        contentId,
+        completed: isCompleted,
+        progress: watchPercentage,
+      },
+      update: {
+        completed: isCompleted,
+        progress: watchPercentage,
+      },
+    });
+
+    // Calculate overall course progress
+    const allContent = await prisma.courseContent.findMany({
+      where: { courseId },
+      select: { id: true },
+    });
+
+    const allProgress = await prisma.progress.findMany({
+      where: {
+        studentId: req.user.id,
+        courseId,
+        contentId: { in: allContent.map(c => c.id) },
+      },
+    });
+
+    const totalContent = allContent.length;
+    const completedContent = allProgress.filter(p => p.completed).length;
+    const courseProgressPercentage = totalContent > 0
+      ? (completedContent / totalContent) * 100
+      : 0;
+
+    // Update course progress
+    const courseProgress = await prisma.courseProgress.upsert({
+      where: {
+        studentId_courseId: {
+          studentId: req.user.id,
+          courseId,
+        },
+      },
+      create: {
+        studentId: req.user.id,
+        courseId,
+        progress: courseProgressPercentage,
+        completed: courseProgressPercentage === 100,
+      },
+      update: {
+        progress: courseProgressPercentage,
+        completed: courseProgressPercentage === 100,
+      },
+    });
+
+    // Send notifications for milestones and completion
+    if (courseProgressPercentage === 100 && !courseProgress.completed) {
+      await notifyCourseCompletion(req.user.id, courseId);
+    } else {
+      const previousProgress = courseProgress.progress;
+      const roundedProgress = Math.round(courseProgressPercentage);
+      const roundedPrevious = Math.round(previousProgress);
+      
+      // Check if we crossed a milestone (25, 50, 75, 100)
+      const milestones = [25, 50, 75, 100];
+      const crossedMilestone = milestones.find(m => roundedPrevious < m && roundedProgress >= m);
+      
+      if (crossedMilestone) {
+        await notifyProgress(req.user.id, courseId, crossedMilestone);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Video finished and progress updated',
+      messageAr: 'تم إنهاء الفيديو وتحديث التقدم',
+      data: {
+        contentId,
+        contentProgress: watchPercentage,
+        courseProgress: courseProgressPercentage,
+        completed: isCompleted,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
