@@ -32,45 +32,103 @@ export const login = async (req, res, next) => {
   try {
     const { email, password, role } = req.body;
 
+    // Validate required fields with detailed messages
     if (!email || !password || !role) {
+      const missingFields = [];
+      if (!email) missingFields.push('Email');
+      if (!password) missingFields.push('Password');
+      if (!role) missingFields.push('Role');
+      
       return res.status(400).json({
         success: false,
-        message: 'Email, password, and role are required',
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+        messageAr: `الحقول المطلوبة مفقودة: ${missingFields.map(f => f === 'Email' ? 'البريد الإلكتروني' : f === 'Password' ? 'كلمة المرور' : 'الدور').join('، ')}`,
+        errorCode: 'MISSING_FIELDS',
+        missingFields,
       });
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format. Please enter a valid email address.',
+        messageAr: 'صيغة البريد الإلكتروني غير صحيحة. يرجى إدخال عنوان بريد إلكتروني صحيح.',
+        errorCode: 'INVALID_EMAIL_FORMAT',
+      });
+    }
+
+    // Find user by email
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase().trim() },
     });
 
+    // User not found
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials',
+        message: 'No account found with this email address. Please check your email or register a new account.',
+        messageAr: 'لا يوجد حساب بهذا البريد الإلكتروني. يرجى التحقق من البريد الإلكتروني أو إنشاء حساب جديد.',
+        errorCode: 'USER_NOT_FOUND',
+        field: 'email',
       });
     }
 
+    // Check role mismatch
     if (user.role !== role) {
+      const roleNames = {
+        ADMIN: { en: 'Administrator', ar: 'مدير' },
+        TEACHER: { en: 'Teacher', ar: 'معلم' },
+        STUDENT: { en: 'Student', ar: 'طالب' },
+      };
+      
+      const userRoleName = roleNames[user.role] || user.role;
+      const requestedRoleName = roleNames[role] || role;
+      
       return res.status(403).json({
         success: false,
-        message: 'Invalid role for this account',
+        message: `This account is registered as ${userRoleName.en}. Please login using the ${userRoleName.en} login page.`,
+        messageAr: `هذا الحساب مسجل كـ ${userRoleName.ar}. يرجى تسجيل الدخول باستخدام صفحة تسجيل الدخول الخاصة بـ ${userRoleName.ar}.`,
+        errorCode: 'ROLE_MISMATCH',
+        userRole: user.role,
+        requestedRole: role,
+        field: 'role',
       });
     }
 
+    // Check account status
     if (user.status === USER_STATUS.BLOCKED) {
       return res.status(403).json({
         success: false,
-        message: 'Account is blocked',
+        message: 'Your account has been blocked. Please contact the administrator for assistance.',
+        messageAr: 'تم حظر حسابك. يرجى الاتصال بالمدير للحصول على المساعدة.',
+        errorCode: 'ACCOUNT_BLOCKED',
+        field: 'status',
       });
     }
 
+    if (user.status === USER_STATUS.PENDING) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is pending approval. Please wait for administrator approval or contact support.',
+        messageAr: 'حسابك قيد الموافقة. يرجى انتظار موافقة المدير أو الاتصال بالدعم.',
+        errorCode: 'ACCOUNT_PENDING',
+        field: 'status',
+      });
+    }
+
+    // Validate password
     const isPasswordValid = await comparePassword(password, user.password);
 
     if (!isPasswordValid) {
       console.error('Login failed: Invalid password for user', email);
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials',
+        message: 'Incorrect password. Please check your password and try again. If you forgot your password, please use the password reset feature.',
+        messageAr: 'كلمة المرور غير صحيحة. يرجى التحقق من كلمة المرور والمحاولة مرة أخرى. إذا نسيت كلمة المرور، يرجى استخدام ميزة إعادة تعيين كلمة المرور.',
+        errorCode: 'INVALID_PASSWORD',
+        field: 'password',
       });
     }
 
