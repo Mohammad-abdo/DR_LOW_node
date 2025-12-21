@@ -42,6 +42,8 @@ router.get('/categories', categoryController.getAllCategories);
 router.get('/categories/:id', categoryController.getCategoryById);
 router.post('/categories', uploadSingle('image'), categoryController.createCategory);
 router.put('/categories/:id', uploadSingle('image'), categoryController.updateCategory);
+// Bulk delete must come before :id route to avoid route conflicts
+router.delete('/categories/bulk', categoryController.deleteCategories); // DELETE body { ids: ["id1", "id2"] } ?reassignTo=<id> or ?force=true
 router.delete('/categories/:id', categoryController.deleteCategory);
 
 // Courses

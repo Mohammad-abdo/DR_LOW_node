@@ -108,8 +108,8 @@ app.use(
             try {
                 const requestHostname = new URL(origin).hostname.toLowerCase();
                 if (allowedHostnames.has(requestHostname) || isLocalNetwork) {
-                    callback(null, true);
-                } else {
+                callback(null, true);
+            } else {
                     callback(new Error("Not allowed by CORS"));
                 }
             } catch {
