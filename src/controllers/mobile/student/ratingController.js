@@ -31,10 +31,10 @@ export const rateCourse = async (req, res, next) => {
       },
     });
 
-    if (!purchase || purchase.payment.status !== 'COMPLETED') {
+    if (!purchase) {
       return res.status(403).json({
         success: false,
-        message: 'Course must be purchased before rating',
+        message: 'Course must be available before rating',
       });
     }
 

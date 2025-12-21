@@ -17,9 +17,6 @@ export const getQuizByContent = async (req, res, next) => {
             purchases: {
               where: {
                 studentId: req.user.id,
-                payment: {
-                  status: 'COMPLETED',
-                },
               },
             },
           },
@@ -41,11 +38,13 @@ export const getQuizByContent = async (req, res, next) => {
       });
     }
 
-    // Check if student has purchased the course
+    // Check if student has access to the course (admin approved)
+    // No payment check needed - access is based on admin approval only
     if (content.course.purchases.length === 0 && !content.isFree) {
       return res.status(403).json({
         success: false,
-        message: 'Course not purchased',
+        message: 'Course not available. Please request access first.',
+        messageAr: 'الدورة غير متاحة. يرجى طلب الوصول أولاً.',
       });
     }
 
@@ -121,9 +120,6 @@ export const submitQuiz = async (req, res, next) => {
             purchases: {
               where: {
                 studentId: req.user.id,
-                payment: {
-                  status: 'COMPLETED',
-                },
               },
             },
           },
@@ -143,11 +139,13 @@ export const submitQuiz = async (req, res, next) => {
       });
     }
 
-    // Check if student has purchased the course
+    // Check if student has access to the course (admin approved)
+    // No payment check needed - access is based on admin approval only
     if (content.course.purchases.length === 0 && !content.isFree) {
       return res.status(403).json({
         success: false,
-        message: 'Course not purchased',
+        message: 'Course not available. Please request access first.',
+        messageAr: 'الدورة غير متاحة. يرجى طلب الوصول أولاً.',
       });
     }
 
