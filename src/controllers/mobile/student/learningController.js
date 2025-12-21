@@ -5,12 +5,11 @@ import { filterExpiredCourses } from '../../../middlewares/courseExpiration.js';
 
 export const getMyCourses = async (req, res, next) => {
   try {
+    // Get all purchases - no payment status check needed
+    // Course access is now based on admin approval only
     const purchases = await prisma.purchase.findMany({
       where: {
         studentId: req.user.id,
-        payment: {
-          status: 'COMPLETED',
-        },
       },
       include: {
         course: {
@@ -149,7 +148,8 @@ export const getCourseContent = async (req, res, next) => {
   try {
     const { courseId } = req.params;
 
-    // Check if student has purchased the course
+    // Check if student has access to the course (admin approved)
+    // No payment check needed - access is based on admin approval only
     const purchase = await prisma.purchase.findUnique({
       where: {
         studentId_courseId: {
@@ -157,15 +157,13 @@ export const getCourseContent = async (req, res, next) => {
           courseId,
         },
       },
-      include: {
-        payment: true,
-      },
     });
 
-    if (!purchase || purchase.payment.status !== 'COMPLETED') {
+    if (!purchase) {
       return res.status(403).json({
         success: false,
-        message: 'Course not purchased',
+        message: 'Course not available. Please request access first.',
+        messageAr: 'الدورة غير متاحة. يرجى طلب الوصول أولاً.',
       });
     }
 
@@ -364,7 +362,8 @@ export const markContentComplete = async (req, res, next) => {
       });
     }
 
-    // Check if student has purchased the course
+    // Check if student has access to the course (admin approved)
+    // No payment check needed - access is based on admin approval only
     const purchase = await prisma.purchase.findUnique({
       where: {
         studentId_courseId: {
@@ -372,15 +371,13 @@ export const markContentComplete = async (req, res, next) => {
           courseId,
         },
       },
-      include: {
-        payment: true,
-      },
     });
 
-    if (!purchase || purchase.payment.status !== 'COMPLETED') {
+    if (!purchase) {
       return res.status(403).json({
         success: false,
-        message: 'Course not purchased',
+        message: 'Course not available. Please request access first.',
+        messageAr: 'الدورة غير متاحة. يرجى طلب الوصول أولاً.',
       });
     }
 
