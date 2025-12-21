@@ -43,8 +43,21 @@ export const getAllCourseRequests = async (req, res, next) => {
 
     try {
       // First, try to get all requests without filters to see if table exists
-      const allRequestsCount = await prisma.courseRequest.count();
+      // Use empty where to get total count
+      const allRequestsCount = await prisma.courseRequest.count({});
       console.log(`Total course requests in database: ${allRequestsCount}`);
+      
+      // If no requests at all, return early
+      if (allRequestsCount === 0) {
+        console.log('No course requests found in database');
+        return res.json({
+          success: true,
+          data: {
+            requests: [],
+            counts: { pending: 0, approved: 0, rejected: 0 },
+          },
+        });
+      }
 
       requests = await prisma.courseRequest.findMany({
         where,
