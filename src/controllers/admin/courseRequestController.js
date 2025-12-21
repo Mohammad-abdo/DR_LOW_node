@@ -8,6 +8,9 @@ import { notifyPurchase } from '../../services/notificationService.js';
  */
 export const getAllCourseRequests = async (req, res, next) => {
   try {
+    console.log('=== getAllCourseRequests called ===');
+    console.log('Query params:', req.query);
+    
     // Check if courseRequest model exists in Prisma client
     if (!prisma.courseRequest) {
       console.warn('CourseRequest model not found in Prisma client. Please run: npm run prisma:generate');
@@ -33,10 +36,16 @@ export const getAllCourseRequests = async (req, res, next) => {
       where.courseId = courseId;
     }
 
+    console.log('Where clause:', JSON.stringify(where, null, 2));
+
     let requests = [];
     let counts = { pending: 0, approved: 0, rejected: 0 };
 
     try {
+      // First, try to get all requests without filters to see if table exists
+      const allRequestsCount = await prisma.courseRequest.count();
+      console.log(`Total course requests in database: ${allRequestsCount}`);
+
       requests = await prisma.courseRequest.findMany({
         where,
         include: {
@@ -76,16 +85,25 @@ export const getAllCourseRequests = async (req, res, next) => {
         },
       });
 
+      console.log(`Found ${requests.length} course requests matching filters`);
+
       // Count by status
       counts = {
         pending: await prisma.courseRequest.count({ where: { status: 'pending' } }),
         approved: await prisma.courseRequest.count({ where: { status: 'approved' } }),
         rejected: await prisma.courseRequest.count({ where: { status: 'rejected' } }),
       };
+
+      console.log('Counts:', counts);
+      console.log('Sample request (first):', requests.length > 0 ? JSON.stringify(requests[0], null, 2) : 'No requests');
     } catch (dbError) {
+      console.error('Database error in getAllCourseRequests:', dbError);
+      console.error('Error code:', dbError.code);
+      console.error('Error message:', dbError.message);
+      
       // If table doesn't exist, return empty data instead of error
-      if (dbError.code === 'P2021' || dbError.code === 'P2025') {
-        console.warn('CourseRequest table may not exist, returning empty data');
+      if (dbError.code === 'P2021' || dbError.code === 'P2025' || dbError.code === 'P2003') {
+        console.warn('CourseRequest table may not exist or has issues, returning empty data');
         requests = [];
         counts = { pending: 0, approved: 0, rejected: 0 };
       } else {
@@ -93,15 +111,24 @@ export const getAllCourseRequests = async (req, res, next) => {
       }
     }
 
-    res.json({
+    const response = {
       success: true,
       data: {
         requests,
         counts,
       },
-    });
+    };
+
+    console.log('Response:', JSON.stringify({
+      success: response.success,
+      requestsCount: response.data.requests.length,
+      counts: response.data.counts
+    }, null, 2));
+
+    res.json(response);
   } catch (error) {
     console.error('Error in getAllCourseRequests:', error);
+    console.error('Error stack:', error.stack);
     next(error);
   }
 };

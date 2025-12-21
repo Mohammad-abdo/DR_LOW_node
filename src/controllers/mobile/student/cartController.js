@@ -56,6 +56,51 @@ export const getCart = async (req, res, next) => {
       });
     }
 
+    // Auto-convert existing cart items to course requests
+    // This handles students who added courses before the auto-request feature
+    if (cart.items && cart.items.length > 0) {
+      try {
+        for (const item of cart.items) {
+          // Check if request already exists
+          const existingRequest = await prisma.courseRequest.findUnique({
+            where: {
+              studentId_courseId: {
+                studentId: req.user.id,
+                courseId: item.courseId,
+              },
+            },
+          });
+
+          if (!existingRequest) {
+            // Check if not already purchased
+            const purchase = await prisma.purchase.findUnique({
+              where: {
+                studentId_courseId: {
+                  studentId: req.user.id,
+                  courseId: item.courseId,
+                },
+              },
+            });
+
+            if (!purchase) {
+              // Create course request
+              await prisma.courseRequest.create({
+                data: {
+                  studentId: req.user.id,
+                  courseId: item.courseId,
+                  status: 'pending',
+                },
+              });
+              console.log(`Auto-created course request for cart item: courseId=${item.courseId}, studentId=${req.user.id}`);
+            }
+          }
+        }
+      } catch (autoRequestError) {
+        // Log but don't fail - cart should still be returned
+        console.error('Error auto-creating requests for cart items:', autoRequestError);
+      }
+    }
+
     const total = cart.items.reduce((sum, item) => {
       const price = parseFloat(item.course?.finalPrice || item.course?.price || 0);
       return sum + price;
@@ -116,8 +161,10 @@ export const addToCart = async (req, res, next) => {
       });
     }
 
-    // Check if there's a pending or approved request
-    const existingRequest = await prisma.courseRequest.findUnique({
+    // Check if there's an approved request (student already enrolled)
+    // Note: We allow adding to cart even if request is pending, 
+    // because we'll handle it when creating/updating the request automatically
+    const existingRequestCheck = await prisma.courseRequest.findUnique({
       where: {
         studentId_courseId: {
           studentId: req.user.id,
@@ -126,17 +173,17 @@ export const addToCart = async (req, res, next) => {
       },
     });
 
-    if (existingRequest && (existingRequest.status === 'pending' || existingRequest.status === 'approved')) {
+    // Only block if request is already approved (student already enrolled)
+    if (existingRequestCheck && existingRequestCheck.status === 'approved') {
       return res.status(400).json({
         success: false,
-        message: existingRequest.status === 'pending' 
-          ? 'Course request already pending' 
-          : 'Course already approved',
-        messageAr: existingRequest.status === 'pending'
-          ? 'طلب الدورة قيد الانتظار بالفعل'
-          : 'الدورة معتمدة بالفعل',
+        message: 'Course already approved',
+        messageAr: 'الدورة معتمدة بالفعل',
       });
     }
+    
+    // If pending or rejected, we'll handle it when adding to cart
+    // This allows users to re-request rejected courses or keep pending ones
 
     // Get or create cart
     let cart = await prisma.cart.findUnique({
@@ -163,9 +210,11 @@ export const addToCart = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'Course already in cart',
+        messageAr: 'الدورة موجودة بالفعل في السلة',
       });
     }
 
+    // Add to cart
     await prisma.cartItem.create({
       data: {
         cartId: cart.id,
@@ -173,9 +222,57 @@ export const addToCart = async (req, res, next) => {
       },
     });
 
+    // Automatically create course request when adding to cart
+    // This makes it easier for mobile users - no need for separate submit step
+    try {
+      // Check if request already exists (might have been rejected before)
+      const existingRequest = await prisma.courseRequest.findUnique({
+        where: {
+          studentId_courseId: {
+            studentId: req.user.id,
+            courseId,
+          },
+        },
+      });
+
+      if (existingRequest) {
+        if (existingRequest.status === 'rejected') {
+          // Update rejected request to pending (user re-requesting)
+          await prisma.courseRequest.update({
+            where: { id: existingRequest.id },
+            data: {
+              status: 'pending',
+              rejectionReason: null,
+            },
+          });
+          console.log(`Updated rejected request ${existingRequest.id} to pending for course ${courseId}`);
+        } else if (existingRequest.status === 'pending') {
+          // Request already pending, just log it
+          console.log(`Course request already pending: ${existingRequest.id} for course ${courseId}`);
+        }
+        // If approved, it was already blocked above
+      } else {
+        // Create new course request
+        const courseRequest = await prisma.courseRequest.create({
+          data: {
+            studentId: req.user.id,
+            courseId,
+            status: 'pending',
+          },
+        });
+        console.log(`Created course request ${courseRequest.id} for course ${courseId} and student ${req.user.id}`);
+      }
+    } catch (requestError) {
+      // Log error but don't fail the cart addition
+      // This ensures cart still works even if course request creation fails
+      console.error('Error creating course request when adding to cart:', requestError);
+      console.error('Course ID:', courseId, 'Student ID:', req.user.id);
+    }
+
     res.json({
       success: true,
       message: 'Course added to cart successfully',
+      messageAr: 'تم إضافة الدورة إلى السلة بنجاح',
     });
   } catch (error) {
     next(error);
@@ -243,6 +340,10 @@ export const clearCart = async (req, res, next) => {
  */
 export const submitCart = async (req, res, next) => {
   try {
+    console.log('=== submitCart called ===');
+    console.log('Student ID:', req.user.id);
+    console.log('Student email:', req.user.email);
+
     const cart = await prisma.cart.findUnique({
       where: { studentId: req.user.id },
       include: {
@@ -253,6 +354,9 @@ export const submitCart = async (req, res, next) => {
         },
       },
     });
+
+    console.log('Cart found:', cart ? 'Yes' : 'No');
+    console.log('Cart items count:', cart?.items?.length || 0);
 
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({
@@ -268,6 +372,8 @@ export const submitCart = async (req, res, next) => {
     // Create course requests for each cart item
     for (const item of cart.items) {
       try {
+        console.log(`Processing cart item: courseId=${item.courseId}, courseTitle=${item.course?.titleEn || item.course?.titleAr}`);
+        
         // Check if already purchased
         const purchase = await prisma.purchase.findUnique({
           where: {
@@ -279,6 +385,7 @@ export const submitCart = async (req, res, next) => {
         });
 
         if (purchase) {
+          console.log(`Course ${item.courseId} already purchased, skipping`);
           errors.push({
             courseId: item.courseId,
             courseTitle: item.course.titleEn || item.course.titleAr,
@@ -298,6 +405,7 @@ export const submitCart = async (req, res, next) => {
         });
 
         if (existingRequest) {
+          console.log(`Course request already exists: status=${existingRequest.status}`);
           if (existingRequest.status === 'pending') {
             errors.push({
               courseId: item.courseId,
@@ -314,6 +422,7 @@ export const submitCart = async (req, res, next) => {
             continue;
           } else if (existingRequest.status === 'rejected') {
             // Update rejected request to pending
+            console.log(`Updating rejected request ${existingRequest.id} to pending`);
             const updatedRequest = await prisma.courseRequest.update({
               where: { id: existingRequest.id },
               data: {
@@ -327,6 +436,7 @@ export const submitCart = async (req, res, next) => {
         }
 
         // Create new request
+        console.log(`Creating new course request for courseId=${item.courseId}`);
         const courseRequest = await prisma.courseRequest.create({
           data: {
             studentId: req.user.id,
@@ -335,8 +445,10 @@ export const submitCart = async (req, res, next) => {
           },
         });
 
+        console.log(`Course request created successfully: id=${courseRequest.id}`);
         requests.push(courseRequest);
       } catch (itemError) {
+        console.error(`Error processing cart item ${item.courseId}:`, itemError);
         errors.push({
           courseId: item.courseId,
           courseTitle: item.course.titleEn || item.course.titleAr,
@@ -345,14 +457,17 @@ export const submitCart = async (req, res, next) => {
       }
     }
 
+    console.log(`Total requests created: ${requests.length}, errors: ${errors.length}`);
+
     // Clear cart after successful submission
     if (requests.length > 0) {
       await prisma.cartItem.deleteMany({
         where: { cartId: cart.id },
       });
+      console.log('Cart cleared after submission');
     }
 
-    res.status(201).json({
+    const response = {
       success: true,
       message: `${requests.length} course request(s) submitted successfully`,
       messageAr: `تم تقديم ${requests.length} طلب دورة بنجاح`,
@@ -360,8 +475,18 @@ export const submitCart = async (req, res, next) => {
         requests,
         errors: errors.length > 0 ? errors : undefined,
       },
-    });
+    };
+
+    console.log('Response:', JSON.stringify({
+      success: response.success,
+      requestsCount: response.data.requests.length,
+      errorsCount: response.data.errors?.length || 0
+    }, null, 2));
+
+    res.status(201).json(response);
   } catch (error) {
+    console.error('Error in submitCart:', error);
+    console.error('Error stack:', error.stack);
     next(error);
   }
 };
