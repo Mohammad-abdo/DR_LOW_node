@@ -78,9 +78,7 @@ router.get('/wishlist', wishlistController.getWishlist);
 router.post('/wishlist', wishlistController.addToWishlist);
 router.delete('/wishlist/:courseId', wishlistController.removeFromWishlist);
 
-// Payments (DISABLED - Use course requests instead)
-// router.post('/payments', paymentController.createPayment); // Disabled - use cart/submit instead
-// router.get('/payments', paymentController.getMyPayments); // Disabled
+
 
 // Learning
 router.get('/my-courses', learningController.getMyCourses);

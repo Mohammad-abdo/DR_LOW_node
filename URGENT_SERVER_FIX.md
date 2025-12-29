@@ -44,13 +44,13 @@ After running the commands, test these endpoints:
 
 ```bash
 # Should return empty array or data (not 500 error)
-curl https://dr-law.developteam.site/api/admin/about-app \
+curl https://back.dr-law.site/api/admin/about-app \
   -H "Authorization: Bearer YOUR_TOKEN"
 
-curl https://dr-law.developteam.site/api/admin/help-support \
+curl https://back.dr-law.site/api/admin/help-support \
   -H "Authorization: Bearer YOUR_TOKEN"
 
-curl https://dr-law.developteam.site/api/admin/policies \
+curl https://back.dr-law.site/api/admin/policies \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -89,6 +89,13 @@ pm2 restart dr-law-backend
 ---
 
 **Status:** Code is fixed and safe. Server needs `npm run prisma:generate` to be run.
+
+
+
+
+
+
+
 
 
 

@@ -305,7 +305,7 @@ All endpoints require:
 // Logout
 Future<Map<String, dynamic>> logout(String token, {bool logoutAllDevices = false}) async {
   final response = await http.post(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/student/auth/logout'),
+    Uri.parse('https://back.dr-law.site/api/mobile/student/auth/logout'),
     headers: {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
@@ -318,7 +318,7 @@ Future<Map<String, dynamic>> logout(String token, {bool logoutAllDevices = false
 // Delete Account
 Future<Map<String, dynamic>> deleteAccount(String token, String password) async {
   final response = await http.delete(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/student/profile'),
+    Uri.parse('https://back.dr-law.site/api/mobile/student/profile'),
     headers: {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
@@ -331,7 +331,7 @@ Future<Map<String, dynamic>> deleteAccount(String token, String password) async 
 // Invite Friend / Share App
 Future<Map<String, dynamic>> getShareInfo(String token) async {
   final response = await http.get(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/student/share'),
+    Uri.parse('https://back.dr-law.site/api/mobile/student/share'),
     headers: {
       'Authorization': 'Bearer $token',
     },
@@ -342,7 +342,7 @@ Future<Map<String, dynamic>> getShareInfo(String token) async {
 // Get About App
 Future<Map<String, dynamic>> getAboutApp(String token) async {
   final response = await http.get(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/student/about'),
+    Uri.parse('https://back.dr-law.site/api/mobile/student/about'),
     headers: {
       'Authorization': 'Bearer $token',
     },
@@ -353,7 +353,7 @@ Future<Map<String, dynamic>> getAboutApp(String token) async {
 // Get Privacy Policy
 Future<Map<String, dynamic>> getPrivacyPolicy(String token) async {
   final response = await http.get(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/student/privacy-policy'),
+    Uri.parse('https://back.dr-law.site/api/mobile/student/privacy-policy'),
     headers: {
       'Authorization': 'Bearer $token',
     },
@@ -367,7 +367,7 @@ Future<Map<String, dynamic>> getPrivacyPolicy(String token) async {
 ```javascript
 import axios from 'axios';
 
-const API_BASE_URL = 'https://dr-law.developteam.site/api';
+const API_BASE_URL = 'https://back.dr-law.site/api';
 const token = 'your_bearer_token';
 
 // Logout
@@ -474,6 +474,13 @@ export const getPrivacyPolicy = async () => {
 2. **Student role required** - Only users with STUDENT role can access these endpoints
 3. **Error Handling:** All endpoints return consistent error format with English and Arabic messages
 4. **HTTP Status Codes:** 200 (success), 400 (bad request), 401 (unauthorized), 404 (not found), 500 (server error)
+
+
+
+
+
+
+
 
 
 

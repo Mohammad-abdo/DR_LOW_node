@@ -19,7 +19,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "https://dr-law.developteam.site/api/mobile/student",
+      "value": "https://back.dr-law.site/api/mobile/student",
       "type": "string"
     },
     {
@@ -277,7 +277,7 @@
               "_postman_previewlanguage": "json",
               "header": [],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"courses\": [\n      {\n        \"id\": \"course-id\",\n        \"titleAr\": \"عنوان الدورة\",\n        \"titleEn\": \"Course Title\",\n        \"descriptionAr\": \"وصف الدورة\",\n        \"descriptionEn\": \"Course Description\",\n        \"price\": 100.00,\n        \"finalPrice\": 80.00,\n        \"coverImage\": \"https://dr-law.developteam.site/uploads/covers/image.jpg\",\n        \"level\": \"BEGINNER\",\n        \"isBasic\": false,\n        \"isFeatured\": true,\n        \"teacher\": {\n          \"id\": \"teacher-id\",\n          \"nameAr\": \"اسم المعلم\",\n          \"nameEn\": \"Teacher Name\",\n          \"avatar\": \"https://dr-law.developteam.site/uploads/avatars/avatar.jpg\"\n        },\n        \"category\": {\n          \"id\": \"category-id\",\n          \"nameAr\": \"اسم الفئة\",\n          \"nameEn\": \"Category Name\"\n        },\n        \"isPurchased\": false,\n        \"averageRating\": 4.5,\n        \"ratingCount\": 10\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 10,\n      \"total\": 50,\n      \"pages\": 5\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"courses\": [\n      {\n        \"id\": \"course-id\",\n        \"titleAr\": \"عنوان الدورة\",\n        \"titleEn\": \"Course Title\",\n        \"descriptionAr\": \"وصف الدورة\",\n        \"descriptionEn\": \"Course Description\",\n        \"price\": 100.00,\n        \"finalPrice\": 80.00,\n        \"coverImage\": \"https://back.dr-law.site/uploads/covers/image.jpg\",\n        \"level\": \"BEGINNER\",\n        \"isBasic\": false,\n        \"isFeatured\": true,\n        \"teacher\": {\n          \"id\": \"teacher-id\",\n          \"nameAr\": \"اسم المعلم\",\n          \"nameEn\": \"Teacher Name\",\n          \"avatar\": \"https://back.dr-law.site/uploads/avatars/avatar.jpg\"\n        },\n        \"category\": {\n          \"id\": \"category-id\",\n          \"nameAr\": \"اسم الفئة\",\n          \"nameEn\": \"Category Name\"\n        },\n        \"isPurchased\": false,\n        \"averageRating\": 4.5,\n        \"ratingCount\": 10\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 10,\n      \"total\": 50,\n      \"pages\": 5\n    }\n  }\n}"
             }
           ]
         },
@@ -323,7 +323,7 @@
               "_postman_previewlanguage": "json",
               "header": [],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"id\": \"course-id\",\n      \"titleAr\": \"عنوان الدورة\",\n      \"titleEn\": \"Course Title\",\n      \"descriptionAr\": \"وصف الدورة\",\n      \"descriptionEn\": \"Course Description\",\n      \"price\": 100.00,\n      \"finalPrice\": 80.00,\n      \"coverImage\": \"https://dr-law.developteam.site/uploads/covers/image.jpg\",\n      \"level\": \"BEGINNER\",\n      \"isBasic\": false,\n      \"isFeatured\": true,\n      \"teacher\": {\n        \"id\": \"teacher-id\",\n        \"nameAr\": \"اسم المعلم\",\n        \"nameEn\": \"Teacher Name\",\n        \"avatar\": \"https://dr-law.developteam.site/uploads/avatars/avatar.jpg\"\n      },\n      \"category\": {\n        \"id\": \"category-id\",\n        \"nameAr\": \"اسم الفئة\",\n        \"nameEn\": \"Category Name\"\n      },\n      \"isPurchased\": false,\n      \"averageRating\": 4.5,\n      \"ratingCount\": 10,\n      \"_count\": {\n        \"purchases\": 50,\n        \"ratings\": 10,\n        \"content\": 20\n      }\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"id\": \"course-id\",\n      \"titleAr\": \"عنوان الدورة\",\n      \"titleEn\": \"Course Title\",\n      \"descriptionAr\": \"وصف الدورة\",\n      \"descriptionEn\": \"Course Description\",\n      \"price\": 100.00,\n      \"finalPrice\": 80.00,\n      \"coverImage\": \"https://back.dr-law.site/uploads/covers/image.jpg\",\n      \"level\": \"BEGINNER\",\n      \"isBasic\": false,\n      \"isFeatured\": true,\n      \"teacher\": {\n        \"id\": \"teacher-id\",\n        \"nameAr\": \"اسم المعلم\",\n        \"nameEn\": \"Teacher Name\",\n        \"avatar\": \"https://back.dr-law.site/uploads/avatars/avatar.jpg\"\n      },\n      \"category\": {\n        \"id\": \"category-id\",\n        \"nameAr\": \"اسم الفئة\",\n        \"nameEn\": \"Category Name\"\n      },\n      \"isPurchased\": false,\n      \"averageRating\": 4.5,\n      \"ratingCount\": 10,\n      \"_count\": {\n        \"purchases\": 50,\n        \"ratings\": 10,\n        \"content\": 20\n      }\n    }\n  }\n}"
             }
           ]
         },
@@ -441,7 +441,7 @@
               "_postman_previewlanguage": "json",
               "header": [],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"cart\": {\n      \"id\": \"cart-id\",\n      \"items\": [\n        {\n          \"id\": \"item-id\",\n          \"courseId\": \"course-id\",\n          \"course\": {\n            \"id\": \"course-id\",\n            \"titleEn\": \"Course Title\",\n            \"titleAr\": \"عنوان الدورة\",\n            \"finalPrice\": 80.00,\n            \"coverImage\": \"https://dr-law.developteam.site/uploads/covers/image.jpg\"\n          }\n        }\n      ],\n      \"total\": 80.00\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"cart\": {\n      \"id\": \"cart-id\",\n      \"items\": [\n        {\n          \"id\": \"item-id\",\n          \"courseId\": \"course-id\",\n          \"course\": {\n            \"id\": \"course-id\",\n            \"titleEn\": \"Course Title\",\n            \"titleAr\": \"عنوان الدورة\",\n            \"finalPrice\": 80.00,\n            \"coverImage\": \"https://back.dr-law.site/uploads/covers/image.jpg\"\n          }\n        }\n      ],\n      \"total\": 80.00\n    }\n  }\n}"
             }
           ]
         },
@@ -712,7 +712,7 @@
               "_postman_previewlanguage": "json",
               "header": [],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"courses\": [\n      {\n        \"id\": \"course-id\",\n        \"titleEn\": \"Course Title\",\n        \"titleAr\": \"عنوان الدورة\",\n        \"coverImage\": \"https://dr-law.developteam.site/uploads/covers/image.jpg\",\n        \"status\": \"in_progress\",\n        \"progress\": 45.5,\n        \"teacher\": {\n          \"nameEn\": \"Teacher Name\",\n          \"nameAr\": \"اسم المعلم\"\n        }\n      }\n    ],\n    \"categorized\": {\n      \"notStarted\": [],\n      \"inProgress\": [],\n      \"completed\": []\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"courses\": [\n      {\n        \"id\": \"course-id\",\n        \"titleEn\": \"Course Title\",\n        \"titleAr\": \"عنوان الدورة\",\n        \"coverImage\": \"https://back.dr-law.site/uploads/covers/image.jpg\",\n        \"status\": \"in_progress\",\n        \"progress\": 45.5,\n        \"teacher\": {\n          \"nameEn\": \"Teacher Name\",\n          \"nameAr\": \"اسم المعلم\"\n        }\n      }\n    ],\n    \"categorized\": {\n      \"notStarted\": [],\n      \"inProgress\": [],\n      \"completed\": []\n    }\n  }\n}"
             }
           ]
         },
@@ -757,7 +757,7 @@
               "_postman_previewlanguage": "json",
               "header": [],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"id\": \"course-id\",\n      \"titleEn\": \"Course Title\",\n      \"content\": [\n        {\n          \"id\": \"content-id\",\n          \"type\": \"video\",\n          \"titleEn\": \"Video Title\",\n          \"videoUrl\": \"https://dr-law.developteam.site/uploads/videos/video.mp4\",\n          \"duration\": 30,\n          \"progress\": 0,\n          \"completed\": false\n        }\n      ],\n      \"chapters\": []\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"course\": {\n      \"id\": \"course-id\",\n      \"titleEn\": \"Course Title\",\n      \"content\": [\n        {\n          \"id\": \"content-id\",\n          \"type\": \"video\",\n          \"titleEn\": \"Video Title\",\n          \"videoUrl\": \"https://back.dr-law.site/uploads/videos/video.mp4\",\n          \"duration\": 30,\n          \"progress\": 0,\n          \"completed\": false\n        }\n      ],\n      \"chapters\": []\n    }\n  }\n}"
             }
           ]
         },

@@ -41,7 +41,7 @@ export const getImageUrl = (imagePath) => {
       } else if (process.env.BACKEND_URL) {
         baseUrl = process.env.BACKEND_URL;
       } else {
-        baseUrl = 'https://dr-law.developteam.site';
+        baseUrl = 'https://back.dr-law.site';
       }
       baseUrl = baseUrl.replace(/\/+$/, '');
       
@@ -60,7 +60,7 @@ export const getImageUrl = (imagePath) => {
     const urlWithoutProtocol = baseUrl.replace(/https?:\/\//, '');
     if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(urlWithoutProtocol)) {
       console.warn(`⚠️ API_BASE_URL contains IP address (${baseUrl}), using domain instead`);
-      baseUrl = 'https://dr-law.developteam.site';
+      baseUrl = 'https://back.dr-law.site';
     }
   } else if (process.env.BACKEND_URL) {
     baseUrl = process.env.BACKEND_URL;
@@ -68,11 +68,11 @@ export const getImageUrl = (imagePath) => {
     const urlWithoutProtocol = baseUrl.replace(/https?:\/\//, '');
     if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(urlWithoutProtocol)) {
       console.warn(`⚠️ BACKEND_URL contains IP address (${baseUrl}), using domain instead`);
-      baseUrl = 'https://dr-law.developteam.site';
+      baseUrl = 'https://back.dr-law.site';
     }
   } else {
     // Default to production domain (dr-law.developteam.site)
-    baseUrl = 'https://dr-law.developteam.site';
+    baseUrl = 'https://back.dr-law.site';
   }
   
   // Log the base URL being used (only in development)

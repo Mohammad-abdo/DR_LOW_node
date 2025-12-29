@@ -4,7 +4,7 @@
 
 ### Base URL
 ```
-https://dr-law.developteam.site/api/mobile/student
+https://back.dr-law.site/api/mobile/student
 ```
 
 جميع الـ endpoints تحتاج:
@@ -298,7 +298,7 @@ export default VideoPlayer;
 ```javascript
 import axios from 'axios';
 
-const API_BASE_URL = 'https://dr-law.developteam.site/api/mobile/student';
+const API_BASE_URL = 'https://back.dr-law.site/api/mobile/student';
 
 // Update progress
 const updateVideoProgress = async (token, courseId, contentId, currentTime, totalDuration) => {
@@ -383,4 +383,11 @@ const finishVideo = async (token, courseId, contentId, watchedDuration, totalDur
 - [ ] حفظ progress عند إغلاق/ترك الصفحة
 - [ ] إظهار رسالة نجاح عند إكمال الفيديو
 - [ ] تحديث UI لعرض progress الحالي
+
+
+
+
+
+
+
 

@@ -27,7 +27,7 @@ This document describes the endpoints for getting unread notification counts for
 **Example Request:**
 ```bash
 curl -X GET \
-  https://dr-law.developteam.site/api/admin/notifications/unread-count \
+  https://back.dr-law.site/api/admin/notifications/unread-count \
   -H 'Authorization: Bearer YOUR_ADMIN_TOKEN'
 ```
 
@@ -58,7 +58,7 @@ curl -X GET \
 **Example Request:**
 ```bash
 curl -X GET \
-  https://dr-law.developteam.site/api/mobile/student/notifications/unread-count \
+  https://back.dr-law.site/api/mobile/student/notifications/unread-count \
   -H 'Authorization: Bearer YOUR_STUDENT_TOKEN'
 ```
 
@@ -75,7 +75,7 @@ import 'dart:convert';
 Future<int> getAdminUnreadCount(String token) async {
   try {
     final response = await http.get(
-      Uri.parse('https://dr-law.developteam.site/api/mobile/admin/notifications/unread-count'),
+      Uri.parse('https://back.dr-law.site/api/mobile/admin/notifications/unread-count'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -109,7 +109,7 @@ import 'dart:convert';
 Future<int> getStudentUnreadCount(String token) async {
   try {
     final response = await http.get(
-      Uri.parse('https://dr-law.developteam.site/api/mobile/student/notifications/unread-count'),
+      Uri.parse('https://back.dr-law.site/api/mobile/student/notifications/unread-count'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -187,7 +187,7 @@ import axios from 'axios';
 const getAdminUnreadCount = async (token) => {
   try {
     const response = await axios.get(
-      'https://dr-law.developteam.site/api/mobile/admin/notifications/unread-count',
+      'https://back.dr-law.site/api/mobile/admin/notifications/unread-count',
       {
         headers: {
           'Content-Type': 'application/json',
@@ -219,7 +219,7 @@ import axios from 'axios';
 const getStudentUnreadCount = async (token) => {
   try {
     const response = await axios.get(
-      'https://dr-law.developteam.site/api/mobile/student/notifications/unread-count',
+      'https://back.dr-law.site/api/mobile/student/notifications/unread-count',
       {
         headers: {
           'Content-Type': 'application/json',

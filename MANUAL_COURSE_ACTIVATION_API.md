@@ -86,7 +86,7 @@ The system has been changed from **online payment** to **manual course activatio
 
 **Example (cURL):**
 ```bash
-curl -X POST https://dr-law.developteam.site/api/mobile/student/cart/submit \
+curl -X POST https://back.dr-law.site/api/mobile/student/cart/submit \
   -H "Authorization: Bearer STUDENT_TOKEN" \
   -H "Content-Type: application/json"
 ```
@@ -95,7 +95,7 @@ curl -X POST https://dr-law.developteam.site/api/mobile/student/cart/submit \
 ```dart
 Future<Map<String, dynamic>> submitCart() async {
   final response = await http.post(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/student/cart/submit'),
+    Uri.parse('https://back.dr-law.site/api/mobile/student/cart/submit'),
     headers: {
       'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',
@@ -173,11 +173,11 @@ Future<Map<String, dynamic>> submitCart() async {
 **Example:**
 ```bash
 # Get all pending requests
-curl -X GET "https://dr-law.developteam.site/api/admin/course-requests?status=pending" \
+curl -X GET "https://back.dr-law.site/api/admin/course-requests?status=pending" \
   -H "Authorization: Bearer ADMIN_TOKEN"
 
 # Get all requests for a specific student
-curl -X GET "https://dr-law.developteam.site/api/admin/course-requests?studentId=student-uuid" \
+curl -X GET "https://back.dr-law.site/api/admin/course-requests?studentId=student-uuid" \
   -H "Authorization: Bearer ADMIN_TOKEN"
 ```
 
@@ -252,7 +252,7 @@ curl -X GET "https://dr-law.developteam.site/api/admin/course-requests?studentId
 
 **Example:**
 ```bash
-curl -X POST https://dr-law.developteam.site/api/admin/course-requests/request-uuid/approve \
+curl -X POST https://back.dr-law.site/api/admin/course-requests/request-uuid/approve \
   -H "Authorization: Bearer ADMIN_TOKEN" \
   -H "Content-Type: application/json"
 ```
@@ -293,7 +293,7 @@ curl -X POST https://dr-law.developteam.site/api/admin/course-requests/request-u
 
 **Example:**
 ```bash
-curl -X POST https://dr-law.developteam.site/api/admin/course-requests/request-uuid/reject \
+curl -X POST https://back.dr-law.site/api/admin/course-requests/request-uuid/reject \
   -H "Authorization: Bearer ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -337,7 +337,7 @@ curl -X POST https://dr-law.developteam.site/api/admin/course-requests/request-u
 
 **Example:**
 ```bash
-curl -X POST https://dr-law.developteam.site/api/admin/course-requests/bulk-approve \
+curl -X POST https://back.dr-law.site/api/admin/course-requests/bulk-approve \
   -H "Authorization: Bearer ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -533,6 +533,13 @@ Make sure to:
 - Test with different request statuses
 - Verify automatic enrollment on approval
 - Check notification delivery
+
+
+
+
+
+
+
 
 
 

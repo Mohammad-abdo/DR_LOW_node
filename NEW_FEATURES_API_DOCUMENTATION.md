@@ -52,13 +52,13 @@ This document describes the newly implemented API endpoints for mobile app suppo
 **Example (cURL):**
 ```bash
 # Single device logout
-curl -X POST https://dr-law.developteam.site/api/auth/logout \
+curl -X POST https://back.dr-law.site/api/auth/logout \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{}'
 
 # Logout from all devices
-curl -X POST https://dr-law.developteam.site/api/auth/logout \
+curl -X POST https://back.dr-law.site/api/auth/logout \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"logoutAllDevices": true}'
@@ -68,7 +68,7 @@ curl -X POST https://dr-law.developteam.site/api/auth/logout \
 ```dart
 Future<void> logout({bool logoutAllDevices = false}) async {
   final response = await http.post(
-    Uri.parse('https://dr-law.developteam.site/api/auth/logout'),
+    Uri.parse('https://back.dr-law.site/api/auth/logout'),
     headers: {
       'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ Future<void> logout({bool logoutAllDevices = false}) async {
 ```javascript
 const logout = async (logoutAllDevices = false) => {
   try {
-    const response = await fetch('https://dr-law.developteam.site/api/auth/logout', {
+    const response = await fetch('https://back.dr-law.site/api/auth/logout', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -151,7 +151,7 @@ const logout = async (logoutAllDevices = false) => {
 
 **Example (cURL):**
 ```bash
-curl -X DELETE https://dr-law.developteam.site/api/mobile/student/profile \
+curl -X DELETE https://back.dr-law.site/api/mobile/student/profile \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"password": "student_password"}'
@@ -161,7 +161,7 @@ curl -X DELETE https://dr-law.developteam.site/api/mobile/student/profile \
 ```dart
 Future<void> deleteAccount(String password) async {
   final response = await http.delete(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/student/profile'),
+    Uri.parse('https://back.dr-law.site/api/mobile/student/profile'),
     headers: {
       'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',
@@ -286,10 +286,10 @@ Future<void> deleteAccount(String password) async {
 **Example (cURL):**
 ```bash
 # Get about app (public)
-curl -X GET https://dr-law.developteam.site/api/app/about
+curl -X GET https://back.dr-law.site/api/app/about
 
 # Create about app (admin)
-curl -X POST https://dr-law.developteam.site/api/admin/about-app \
+curl -X POST https://back.dr-law.site/api/admin/about-app \
   -H "Authorization: Bearer ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -416,10 +416,10 @@ curl -X POST https://dr-law.developteam.site/api/admin/about-app \
 **Example (cURL):**
 ```bash
 # Get help support (public)
-curl -X GET https://dr-law.developteam.site/api/app/help-support
+curl -X GET https://back.dr-law.site/api/app/help-support
 
 # Create help support (admin)
-curl -X POST https://dr-law.developteam.site/api/admin/help-support \
+curl -X POST https://back.dr-law.site/api/admin/help-support \
   -H "Authorization: Bearer ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -558,13 +558,13 @@ curl -X POST https://dr-law.developteam.site/api/admin/help-support \
 **Example (cURL):**
 ```bash
 # Get all policies (public)
-curl -X GET https://dr-law.developteam.site/api/app/policies
+curl -X GET https://back.dr-law.site/api/app/policies
 
 # Get specific policy (public)
-curl -X GET "https://dr-law.developteam.site/api/app/policies?type=privacy_policy"
+curl -X GET "https://back.dr-law.site/api/app/policies?type=privacy_policy"
 
 # Create policy (admin)
-curl -X POST https://dr-law.developteam.site/api/admin/policies \
+curl -X POST https://back.dr-law.site/api/admin/policies \
   -H "Authorization: Bearer ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -685,6 +685,13 @@ Make sure to:
 2. Set up proper authentication tokens
 3. Test both public and admin endpoints
 4. Verify error handling for invalid requests
+
+
+
+
+
+
+
 
 
 

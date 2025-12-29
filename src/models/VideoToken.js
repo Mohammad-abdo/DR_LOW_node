@@ -42,7 +42,7 @@ export const verifyVideoToken = (token) => {
  */
 export const generateSignedVideoUrl = (videoPath, userId, contentId, courseId) => {
   const token = generateVideoToken(userId, contentId, courseId);
-  const baseUrl = process.env.API_BASE_URL || 'https://dr-law.developteam.site';
+  const baseUrl = process.env.API_BASE_URL || 'https://back.dr-law.site';
   return `${baseUrl}/api/video/stream?token=${token}&contentId=${contentId}`;
 };
 

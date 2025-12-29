@@ -73,6 +73,8 @@ const rawAllowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173||h
 
 // Always allow the production frontend even if FRONTEND_URL is set incorrectly in env
 rawAllowedOrigins.push("https://dr-low.vercel.app");
+rawAllowedOrigins.push("https://dr-law.site");
+rawAllowedOrigins.push("http://dr-law.site");
 
 // Normalize allowed origins:
 // - Accept entries with or without scheme (e.g. `dr-low.vercel.app`)
@@ -141,13 +143,67 @@ const __dirname = path.dirname(__filename);
 const uploadsPath = path.join(__dirname, "../uploads");
 console.log("📁 Serving uploads from:", uploadsPath);
 
-// Serve static files with proper headers for videos
+// Handle OPTIONS requests for static files (CORS preflight)
+app.options("/uploads/*", (req, res) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    try {
+      const requestHostname = new URL(origin).hostname.toLowerCase();
+      if (allowedHostnames.has(requestHostname) || 
+          /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type');
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+      }
+    } catch (e) {
+      // Invalid origin
+    }
+  }
+  res.status(204).end();
+});
+
+// Serve static files with proper headers for videos and CORS
 app.use("/uploads", express.static(uploadsPath, {
-  setHeaders: (res, filePath) => {
+  setHeaders: (res, filePath, stat) => {
+    // CORS headers for all static files
+    const origin = res.req.headers.origin;
+    if (origin) {
+      try {
+        const requestHostname = new URL(origin).hostname.toLowerCase();
+        if (allowedHostnames.has(requestHostname) || 
+            /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) {
+          res.setHeader('Access-Control-Allow-Origin', origin);
+          res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type');
+          res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+          res.setHeader('Access-Control-Allow-Credentials', 'true');
+        }
+      } catch (e) {
+        // Invalid origin, skip CORS headers
+      }
+    } else {
+      // No origin (direct request), allow it
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    
     // Set proper headers for video files
     if (filePath.endsWith('.mp4') || filePath.endsWith('.webm')) {
       res.setHeader('Content-Type', 'video/mp4');
       res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+    }
+    
+    // Set headers for images
+    if (filePath.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+    }
+    
+    // Set headers for PDFs
+    if (filePath.endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Cache-Control', 'public, max-age=31536000');
     }
   },

@@ -277,7 +277,7 @@ These endpoints are **public** and **do not require authentication**. They are d
 // Get About App (Public)
 Future<Map<String, dynamic>> getAboutApp() async {
   final response = await http.get(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/public/about'),
+    Uri.parse('https://back.dr-law.site/api/mobile/public/about'),
   );
   return json.decode(response.body);
 }
@@ -285,7 +285,7 @@ Future<Map<String, dynamic>> getAboutApp() async {
 // Get Privacy Policy (Public)
 Future<Map<String, dynamic>> getPrivacyPolicy() async {
   final response = await http.get(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/public/privacy-policy'),
+    Uri.parse('https://back.dr-law.site/api/mobile/public/privacy-policy'),
   );
   return json.decode(response.body);
 }
@@ -293,7 +293,7 @@ Future<Map<String, dynamic>> getPrivacyPolicy() async {
 // Logout (Authenticated)
 Future<Map<String, dynamic>> logout(String token, {bool logoutAllDevices = false}) async {
   final response = await http.post(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/student/auth/logout'),
+    Uri.parse('https://back.dr-law.site/api/mobile/student/auth/logout'),
     headers: {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
@@ -306,7 +306,7 @@ Future<Map<String, dynamic>> logout(String token, {bool logoutAllDevices = false
 // Delete Account (Authenticated)
 Future<Map<String, dynamic>> deleteAccount(String token, String password) async {
   final response = await http.delete(
-    Uri.parse('https://dr-law.developteam.site/api/mobile/student/profile'),
+    Uri.parse('https://back.dr-law.site/api/mobile/student/profile'),
     headers: {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
@@ -322,7 +322,7 @@ Future<Map<String, dynamic>> deleteAccount(String token, String password) async 
 ```javascript
 import axios from 'axios';
 
-const API_BASE_URL = 'https://dr-law.developteam.site/api';
+const API_BASE_URL = 'https://back.dr-law.site/api';
 
 // Get About App (Public)
 export const getAboutApp = async () => {
@@ -387,6 +387,13 @@ export const deleteAccount = async (token, password) => {
 4. **Rate Limiting:**
    - Public endpoints may have rate limiting
    - Authenticated endpoints respect user rate limits
+
+
+
+
+
+
+
 
 
 
