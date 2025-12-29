@@ -152,17 +152,24 @@ const setCORSHeaders = (req, res) => {
       const requestHostname = new URL(origin).hostname.toLowerCase();
       const isLocalNetwork = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin);
       
-      if (allowedHostnames.has(requestHostname) || isLocalNetwork) {
+      // Allow dr-law.site and dr-low.vercel.app
+      const allowedDomains = ['dr-law.site', 'dr-low.vercel.app', 'dr-law.developteam.site'];
+      const isAllowedDomain = allowedDomains.some(domain => requestHostname === domain || requestHostname.endsWith(`.${domain}`));
+      
+      if (allowedHostnames.has(requestHostname) || isLocalNetwork || isAllowedDomain) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+        // Note: When using crossOrigin="anonymous", we should not set credentials to true
+        // But we'll set it to allow both anonymous and credentials requests
         res.setHeader('Access-Control-Allow-Credentials', 'true');
         res.setHeader('Access-Control-Max-Age', '86400');
         return true;
       }
     } catch (e) {
       // Invalid origin
+      console.error('CORS error:', e.message);
     }
   } else {
     // No origin (direct request), allow it
