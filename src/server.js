@@ -8,6 +8,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 import os from "os";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 // Import routes
@@ -143,32 +144,130 @@ const __dirname = path.dirname(__filename);
 const uploadsPath = path.join(__dirname, "../uploads");
 console.log("📁 Serving uploads from:", uploadsPath);
 
-// Handle OPTIONS requests for static files (CORS preflight)
-app.options("/uploads/*", (req, res) => {
+// Helper function to set CORS headers
+const setCORSHeaders = (req, res) => {
   const origin = req.headers.origin;
   if (origin) {
     try {
       const requestHostname = new URL(origin).hostname.toLowerCase();
-      if (allowedHostnames.has(requestHostname) || 
-          /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) {
+      const isLocalNetwork = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin);
+      
+      if (allowedHostnames.has(requestHostname) || isLocalNetwork) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
         res.setHeader('Access-Control-Allow-Credentials', 'true');
-        res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+        res.setHeader('Access-Control-Max-Age', '86400');
+        return true;
       }
     } catch (e) {
       // Invalid origin
     }
+  } else {
+    // No origin (direct request), allow it
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return true;
   }
+  return false;
+};
+
+// Handle OPTIONS requests for static files (CORS preflight)
+app.options("/uploads/*", (req, res) => {
+  setCORSHeaders(req, res);
   res.status(204).end();
 });
 
-// Serve static files with proper headers for videos and CORS
+// Custom route handler for static files with CORS support
+app.get("/uploads/*", (req, res, next) => {
+  // Set CORS headers first
+  setCORSHeaders(req, res);
+  
+  // Get the file path from the request URL
+  // req.url includes /uploads/..., we need to extract the path after /uploads/
+  let urlPath = req.url;
+  if (urlPath.startsWith('/uploads/')) {
+    urlPath = urlPath.substring('/uploads/'.length);
+  }
+  // Remove query string
+  urlPath = urlPath.split('?')[0];
+  const filePath = decodeURIComponent(urlPath);
+  const fullPath = path.join(uploadsPath, filePath);
+  
+  // Security check: ensure the path is within uploads directory
+  const normalizedPath = path.normalize(fullPath);
+  const normalizedUploadsPath = path.normalize(uploadsPath);
+  
+  if (!normalizedPath.startsWith(normalizedUploadsPath)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied',
+      messageAr: 'تم رفض الوصول',
+    });
+  }
+  
+  // Check if file exists
+  if (!fs.existsSync(normalizedPath)) {
+    console.log('❌ File not found:', {
+      requested: req.url,
+      filePath: filePath,
+      fullPath: normalizedPath,
+      uploadsPath: uploadsPath
+    });
+    return res.status(404).json({
+      success: false,
+      message: 'File not found',
+      messageAr: 'الملف غير موجود',
+      debug: process.env.NODE_ENV === 'development' ? {
+        requested: req.url,
+        filePath: filePath,
+        fullPath: normalizedPath
+      } : undefined
+    });
+  }
+  
+  // Set content type based on file extension
+  const ext = path.extname(normalizedPath).toLowerCase();
+  if (ext === '.mp4' || ext === '.webm') {
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+  } else if (ext.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+  } else if (ext === '.pdf') {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+  }
+  
+  // Handle range requests for video streaming
+  const stat = fs.statSync(normalizedPath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+  
+  if (range && (ext === '.mp4' || ext === '.webm')) {
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunksize = (end - start) + 1;
+    const file = fs.createReadStream(normalizedPath, { start, end });
+    
+    res.status(206);
+    res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+    res.setHeader('Content-Length', chunksize);
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    file.pipe(res);
+  } else {
+    // Send entire file
+    res.setHeader('Content-Length', fileSize);
+    res.sendFile(normalizedPath);
+  }
+});
+
+// Fallback: serve static files for other methods (HEAD, etc.)
 app.use("/uploads", express.static(uploadsPath, {
   setHeaders: (res, filePath, stat) => {
-    // CORS headers for all static files
+    // CORS headers
     const origin = res.req.headers.origin;
     if (origin) {
       try {
@@ -182,33 +281,13 @@ app.use("/uploads", express.static(uploadsPath, {
           res.setHeader('Access-Control-Allow-Credentials', 'true');
         }
       } catch (e) {
-        // Invalid origin, skip CORS headers
+        // Invalid origin
       }
     } else {
-      // No origin (direct request), allow it
       res.setHeader('Access-Control-Allow-Origin', '*');
     }
-    
-    // Set proper headers for video files
-    if (filePath.endsWith('.mp4') || filePath.endsWith('.webm')) {
-      res.setHeader('Content-Type', 'video/mp4');
-      res.setHeader('Accept-Ranges', 'bytes');
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-    }
-    
-    // Set headers for images
-    if (filePath.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-    }
-    
-    // Set headers for PDFs
-    if (filePath.endsWith('.pdf')) {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-    }
   },
-  // Handle errors gracefully
-  fallthrough: false,
+  fallthrough: true, // Allow other routes to handle if file not found
 }));
 
 // Health check
