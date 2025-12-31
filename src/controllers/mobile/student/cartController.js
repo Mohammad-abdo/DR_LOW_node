@@ -1,4 +1,5 @@
 import prisma from '../../../config/database.js';
+import { convertImageUrls } from '../../../utils/imageHelper.js';
 
 export const getCart = async (req, res, next) => {
   try {
@@ -106,13 +107,16 @@ export const getCart = async (req, res, next) => {
       return sum + price;
     }, 0);
 
+    // Convert all image paths to full URLs
+    const cartWithFullUrls = convertImageUrls({
+      ...cart,
+      total,
+    }, ['coverImage', 'avatar', 'image', 'videoUrl', 'fileUrl']);
+
     res.json({
       success: true,
       data: {
-        cart: {
-          ...cart,
-          total,
-        },
+        cart: cartWithFullUrls,
       },
     });
   } catch (error) {

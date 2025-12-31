@@ -142,3 +142,4 @@ node_modules\.bin\prisma.cmd migrate dev --name add_isBasic_to_category
 
 
 
+
