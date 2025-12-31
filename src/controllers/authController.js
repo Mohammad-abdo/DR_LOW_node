@@ -2,6 +2,7 @@ import prisma from '../config/database.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, verifyAccessToken } from '../utils/jwt.js';
 import { ROLES, USER_STATUS } from '../config/constants.js';
+import { convertImageUrls } from '../utils/imageHelper.js';
 
 /**
  * @swagger
@@ -142,11 +143,14 @@ export const login = async (req, res, next) => {
 
     const { password: _, refreshToken: __, ...userData } = user;
 
+    // Convert avatar path to full URL
+    const userWithFullUrl = convertImageUrls(userData, ['avatar']);
+
     res.json({
       success: true,
       message: 'Login successful',
       data: {
-        user: userData,
+        user: userWithFullUrl,
         accessToken,
         refreshToken,
       },
@@ -252,10 +256,13 @@ export const registerStudent = async (req, res, next) => {
 
     const { password: _, refreshToken: __, ...userData } = user;
 
+    // Convert avatar path to full URL
+    const userWithFullUrl = convertImageUrls(userData, ['avatar']);
+
     res.status(201).json({
       success: true,
       message: 'Student registered successfully',
-      data: { user: userData },
+      data: { user: userWithFullUrl },
     });
   } catch (error) {
     next(error);
@@ -327,10 +334,13 @@ export const registerTeacher = async (req, res, next) => {
 
     const { password: _, refreshToken: __, ...userData } = user;
 
+    // Convert avatar path to full URL
+    const userWithFullUrl = convertImageUrls(userData, ['avatar']);
+
     res.status(201).json({
       success: true,
       message: 'Teacher registered successfully',
-      data: { user: userData },
+      data: { user: userWithFullUrl },
     });
   } catch (error) {
     next(error);
@@ -521,13 +531,16 @@ export const getMe = async (req, res, next) => {
       );
     }
 
+    // Convert avatar path to full URL
+    const userWithFullUrl = convertImageUrls({
+      ...user,
+      profileComplete,
+    }, ['avatar']);
+
     res.json({
       success: true,
       data: {
-        user: {
-          ...user,
-          profileComplete,
-        },
+        user: userWithFullUrl,
       },
     });
   } catch (error) {
