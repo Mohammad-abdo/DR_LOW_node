@@ -1,4 +1,5 @@
 import prisma from '../config/database.js';
+import { convertImageUrls } from '../utils/imageHelper.js';
 
 export const getProfile = async (req, res, next) => {
   try {
@@ -34,13 +35,16 @@ export const getProfile = async (req, res, next) => {
       );
     }
 
+    // Convert avatar path to full URL
+    const userWithFullUrl = convertImageUrls({
+      ...user,
+      profileComplete,
+    }, ['avatar']);
+
     res.json({
       success: true,
       data: {
-        user: {
-          ...user,
-          profileComplete,
-        },
+        user: userWithFullUrl,
       },
     });
   } catch (error) {
@@ -187,14 +191,17 @@ export const updateProfile = async (req, res, next) => {
       );
     }
 
+    // Convert avatar path to full URL
+    const userWithFullUrl = convertImageUrls({
+      ...updatedUser,
+      profileComplete,
+    }, ['avatar']);
+
     res.json({
       success: true,
       message: 'Profile updated successfully',
       data: {
-        user: {
-          ...updatedUser,
-          profileComplete,
-        },
+        user: userWithFullUrl,
       },
     });
   } catch (error) {
