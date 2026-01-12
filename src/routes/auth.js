@@ -18,7 +18,7 @@ router.post('/login', login);
 router.post('/register/student', registerStudent);
 router.post('/refresh', refreshToken);
 router.post('/forget-password/student', forgetPassword);
-router.post('/reset-password/student/:token', resetPassword);
+router.post('/reset-password/student', resetPassword);
 
 
 // Protected routes
