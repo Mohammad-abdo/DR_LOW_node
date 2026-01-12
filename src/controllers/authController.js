@@ -413,6 +413,111 @@ export const refreshToken = async (req, res, next) => {
     next(error);
   }
 };
+export const forgetPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Generate token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExp: new Date(Date.now() + 10 * 60 * 1000), // 10 دقائق
+      },
+    });
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    // 🔴 هنا تبعت الإيميل
+    // await sendEmail(user.email, resetUrl);
+
+    res.status(200).json({
+      success: true,
+      message: 'Reset password link sent to email',
+      resetUrl, // شيله في production
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExp: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token is invalid or expired',
+      });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExp: null,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * @swagger
