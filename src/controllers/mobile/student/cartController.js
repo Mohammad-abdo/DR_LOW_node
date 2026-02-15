@@ -1,5 +1,54 @@
 import prisma from '../../../config/database.js';
 import { convertImageUrls } from '../../../utils/imageHelper.js';
+import { notifyPurchase } from '../../../services/notificationService.js';
+
+/**
+ * Auto-approve course request and enroll student (add course to student's courses).
+ * Creates/updates CourseRequest to approved and creates Purchase.
+ */
+async function autoApproveAndEnroll(studentId, courseId, course) {
+  const existingPurchase = await prisma.purchase.findUnique({
+    where: {
+      studentId_courseId: { studentId, courseId },
+    },
+  });
+  if (existingPurchase) {
+    const existing = await prisma.courseRequest.findUnique({
+      where: { studentId_courseId: { studentId, courseId } },
+    });
+    if (existing && existing.status !== 'approved') {
+      await prisma.courseRequest.update({
+        where: { id: existing.id },
+        data: { status: 'approved' },
+      });
+    }
+    return;
+  }
+  const amount = course?.finalPrice ?? course?.price ?? 0;
+  await prisma.$transaction(async (tx) => {
+    const existingReq = await tx.courseRequest.findUnique({
+      where: { studentId_courseId: { studentId, courseId } },
+    });
+    if (existingReq) {
+      await tx.courseRequest.update({
+        where: { id: existingReq.id },
+        data: { status: 'approved', rejectionReason: null },
+      });
+    } else {
+      await tx.courseRequest.create({
+        data: { studentId, courseId, status: 'approved' },
+      });
+    }
+    await tx.purchase.create({
+      data: { studentId, courseId, amount },
+    });
+  });
+  try {
+    await notifyPurchase(studentId, courseId, parseFloat(amount));
+  } catch (e) {
+    console.error('Error sending approval notification:', e);
+  }
+}
 
 export const getCart = async (req, res, next) => {
   try {
@@ -84,15 +133,9 @@ export const getCart = async (req, res, next) => {
             });
 
             if (!purchase) {
-              // Create course request
-              await prisma.courseRequest.create({
-                data: {
-                  studentId: req.user.id,
-                  courseId: item.courseId,
-                  status: 'pending',
-                },
-              });
-              console.log(`Auto-created course request for cart item: courseId=${item.courseId}, studentId=${req.user.id}`);
+              // Auto-approve: create approved request and add course to student
+              await autoApproveAndEnroll(req.user.id, item.courseId, item.course);
+              console.log(`Auto-approved and enrolled for cart item: courseId=${item.courseId}, studentId=${req.user.id}`);
             }
           }
         }
@@ -226,57 +269,30 @@ export const addToCart = async (req, res, next) => {
       },
     });
 
-    // Automatically create course request when adding to cart
-    // This makes it easier for mobile users - no need for separate submit step
+    // Auto-approve: add course directly to student's courses (no manual approval needed)
     try {
-      // Check if request already exists (might have been rejected before)
-      const existingRequest = await prisma.courseRequest.findUnique({
-        where: {
-          studentId_courseId: {
-            studentId: req.user.id,
-            courseId,
-          },
-        },
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { price: true, finalPrice: true },
       });
-
-      if (existingRequest) {
-        if (existingRequest.status === 'rejected') {
-          // Update rejected request to pending (user re-requesting)
-          await prisma.courseRequest.update({
-            where: { id: existingRequest.id },
-            data: {
-              status: 'pending',
-              rejectionReason: null,
-            },
-          });
-          console.log(`Updated rejected request ${existingRequest.id} to pending for course ${courseId}`);
-        } else if (existingRequest.status === 'pending') {
-          // Request already pending, just log it
-          console.log(`Course request already pending: ${existingRequest.id} for course ${courseId}`);
-        }
-        // If approved, it was already blocked above
-      } else {
-        // Create new course request
-        const courseRequest = await prisma.courseRequest.create({
-          data: {
-            studentId: req.user.id,
-            courseId,
-            status: 'pending',
-          },
+      if (course) {
+        await autoApproveAndEnroll(req.user.id, courseId, course);
+        console.log(`Auto-approved and enrolled for course ${courseId}, student ${req.user.id}`);
+        // Remove from cart since course is now in student's courses
+        await prisma.cartItem.deleteMany({
+          where: { cartId: cart.id, courseId },
         });
-        console.log(`Created course request ${courseRequest.id} for course ${courseId} and student ${req.user.id}`);
       }
     } catch (requestError) {
       // Log error but don't fail the cart addition
-      // This ensures cart still works even if course request creation fails
-      console.error('Error creating course request when adding to cart:', requestError);
+      console.error('Error auto-approving course when adding to cart:', requestError);
       console.error('Course ID:', courseId, 'Student ID:', req.user.id);
     }
 
     res.json({
       success: true,
-      message: 'Course added to cart successfully',
-      messageAr: 'تم إضافة الدورة إلى السلة بنجاح',
+      message: 'Course added to your courses successfully',
+      messageAr: 'تمت إضافة الدورة إلى دوراتك بنجاح',
     });
   } catch (error) {
     next(error);
@@ -339,8 +355,8 @@ export const clearCart = async (req, res, next) => {
 /**
  * Submit Cart as Course Requests
  * POST /api/mobile/student/cart/submit
- * 
- * Converts all cart items into course requests with status "pending"
+ *
+ * Auto-approves requests and adds courses directly to student's courses.
  */
 export const submitCart = async (req, res, next) => {
   try {
@@ -408,49 +424,25 @@ export const submitCart = async (req, res, next) => {
           },
         });
 
-        if (existingRequest) {
-          console.log(`Course request already exists: status=${existingRequest.status}`);
-          if (existingRequest.status === 'pending') {
-            errors.push({
-              courseId: item.courseId,
-              courseTitle: item.course.titleEn || item.course.titleAr,
-              error: 'Request already pending',
-            });
-            continue;
-          } else if (existingRequest.status === 'approved') {
-            errors.push({
-              courseId: item.courseId,
-              courseTitle: item.course.titleEn || item.course.titleAr,
-              error: 'Course already approved',
-            });
-            continue;
-          } else if (existingRequest.status === 'rejected') {
-            // Update rejected request to pending
-            console.log(`Updating rejected request ${existingRequest.id} to pending`);
-            const updatedRequest = await prisma.courseRequest.update({
-              where: { id: existingRequest.id },
-              data: {
-                status: 'pending',
-                rejectionReason: null,
-              },
-            });
-            requests.push(updatedRequest);
-            continue;
-          }
+        if (existingRequest && existingRequest.status === 'approved') {
+          errors.push({
+            courseId: item.courseId,
+            courseTitle: item.course.titleEn || item.course.titleAr,
+            error: 'Course already approved',
+          });
+          continue;
         }
 
-        // Create new request
-        console.log(`Creating new course request for courseId=${item.courseId}`);
-        const courseRequest = await prisma.courseRequest.create({
-          data: {
-            studentId: req.user.id,
-            courseId: item.courseId,
-            status: 'pending',
+        // Auto-approve: add course directly to student's courses
+        console.log(`Auto-approving and enrolling for courseId=${item.courseId}`);
+        await autoApproveAndEnroll(req.user.id, item.courseId, item.course);
+        const requestAfter = await prisma.courseRequest.findUnique({
+          where: {
+            studentId_courseId: { studentId: req.user.id, courseId: item.courseId },
           },
         });
-
-        console.log(`Course request created successfully: id=${courseRequest.id}`);
-        requests.push(courseRequest);
+        if (requestAfter) requests.push(requestAfter);
+        console.log(`Course request approved and enrolled: courseId=${item.courseId}`);
       } catch (itemError) {
         console.error(`Error processing cart item ${item.courseId}:`, itemError);
         errors.push({
@@ -473,8 +465,8 @@ export const submitCart = async (req, res, next) => {
 
     const response = {
       success: true,
-      message: `${requests.length} course request(s) submitted successfully`,
-      messageAr: `تم تقديم ${requests.length} طلب دورة بنجاح`,
+      message: `${requests.length} course(s) added to your courses successfully`,
+      messageAr: `تمت إضافة ${requests.length} دورة إلى دوراتك بنجاح`,
       data: {
         requests,
         errors: errors.length > 0 ? errors : undefined,
