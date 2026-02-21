@@ -3,6 +3,7 @@ import { hashPassword, comparePassword } from '../utils/password.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, verifyAccessToken } from '../utils/jwt.js';
 import { ROLES, USER_STATUS } from '../config/constants.js';
 import { convertImageUrls } from '../utils/imageHelper.js';
+import crypto from 'crypto';
 
 /**
  * @swagger
@@ -408,6 +409,117 @@ export const refreshToken = async (req, res, next) => {
         accessToken,
         refreshToken: newRefreshToken,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const forgetPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Generate secure token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExp: new Date(Date.now() + 10 * 60 * 1000), // 10 دقائق
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Reset token generated',
+      data: {
+        resetToken, // ✔ الموبايل هيبعتُه تاني
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { email, resetToken, newPassword } = req.body;
+
+    if (!email || !resetToken || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    const user = await prisma.user.findFirst({
+      where: {
+        email,
+        resetPasswordToken: hashedToken,
+        resetPasswordExp: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token',
+      });
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExp: null,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully',
     });
   } catch (error) {
     next(error);
